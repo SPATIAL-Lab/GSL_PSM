@@ -1,2 +1,2 @@
-# CenoCO2
-Code and data for Cenozoic pCO2 curve fit
+# GSL_PSM
+Code and data for the Great Salt Lake Proxy System Model
