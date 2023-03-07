@@ -12,58 +12,6 @@ library(isoWater)
 setwd("C:/Users/ydmag/Google Drive/U of U/GSL proxy/GSL_PSM")
 
 ##############test evaporation rate calculation####
-# rh <- 0.4
-# Vpfs.25 = 0.61078 * exp(17.269 * 25/(237.3 + 25))
-# 
-# E.rate.25 =  2.909* 5.8 * (GSL.area.1286*1e6)^-0.05 * (GSL.salicoeff - rh) * Vpfs.25/(2.501-0.002361* 25)/1e6 * 365*1000 
-# 
-# #reaching mass balance between 1279.703m and 1279.855m 
-# E.vol.25 <- E.rate.25 * GSL.area.1286/1000
-# 
-# Vpfs.20 = 0.61078 * exp(17.269 * 20/(237.3 + 20))
-# 
-# E.rate.20 =  2.909* 5.8 * (GSL.area.1286*1e6)^-0.05 * (GSL.salicoeff - rh) * Vpfs.20/(2.501-0.002361* 20)/1e6 * 365*1000 
-# E.vol.20 <- E.rate.20 * GSL.area.1286/1000
-# 
-# Vpfs.30 = 0.61078 * exp(17.269 * 30/(237.3 + 30))
-# 
-# E.rate.30 =  2.909* 5.8 * (GSL.area.1286*1e6)^-0.05 * (GSL.salicoeff - rh) * Vpfs.30/(2.501-0.002361* 30)/1e6 * 365*1000 
-# E.vol.30 <- E.rate.30 * GSL.area.1286/1000
-# 
-# plot(GSL.level.1286,E.vol.30,type="l",col="red",ylim=c(0,20),
-#      main = "Evaporation at rh = 0.4",xlab="Lake level",ylab="Evaporation")
-# lines(GSL.level.1286,E.vol.25,col="green")
-# lines(GSL.level.1286,E.vol.20,col="blue")
-# abline(h=3.99,lty=2,lwd = 2)
-# legend(1272,20,c("30 degrees","25 degrees","20 degrees","mean inflow"),col=c("red","green","blue","black"),
-#        lwd=c(1,1,1,2), lty=c(1,1,1,2))
-# 
-# 
-# rh <- 0.35
-# Vpfs.25 = 0.61078 * exp(17.269 * 25/(237.3 + 25)) #better to use air temperature for this equation!!!!!!!!!!!!!!
-# 
-# E.rate.25 =  2.909* 5.8 * (GSL.area.1286*1e6)^-0.05 * (GSL.salicoeff - rh) * Vpfs.25/(2.501-0.002361* 25)/1e6 * 365*1000 
-# 
-# #reaching mass balance between 1279.703m and 1279.855m 
-# E.vol.25 <- E.rate.25 * GSL.area.1286/1000
-# 
-# Vpfs.20 = 0.61078 * exp(17.269 * 20/(237.3 + 20))
-# 
-# E.rate.20 =  2.909* 5.8 * (GSL.area.1286*1e6)^-0.05 * (GSL.salicoeff - rh) * Vpfs.20/(2.501-0.002361* 20)/1e6 * 365*1000 
-# E.vol.20 <- E.rate.20 * GSL.area.1286/1000
-# 
-# Vpfs.30 = 0.61078 * exp(17.269 * 30/(237.3 + 30))
-# 
-# E.rate.30 =  2.909* 5.8 * (GSL.area.1286*1e6)^-0.05 * (GSL.salicoeff - rh) * Vpfs.30/(2.501-0.002361* 30)/1e6 * 365*1000 
-# E.vol.30 <- E.rate.30 * GSL.area.1286/1000
-# 
-# plot(GSL.level.1286,E.vol.30,type="l",col="red",ylim=c(0,20),
-#      main = "Evaporation at rh = 0.35",xlab="Lake level",ylab="Evaporation")
-# lines(GSL.level.1286,E.vol.25,col="green")
-# lines(GSL.level.1286,E.vol.20,col="blue")
-# abline(h=3.99,lty=2,lwd = 2)
-# legend(1272,20,c("30 degrees","25 degrees","20 degrees","mean inflow"),col=c("red","green","blue","black"),
-#        lwd=c(1,1,1,2), lty=c(1,1,1,2))
 
 #if using simplified penman equation, may need to use annual average?
 rh <- 0.4
@@ -239,8 +187,8 @@ Lw.intc <- GSL.lake.mwl[2]
 d18O.vap.warm <- GSL.Vapor.warm.d18O
 
 #parameters to save
-parameters <- c("L.level","rh", "nsws", "LST", "Runoff", "sal", "S.coeff",
-                "E.rate", "Evap", "LV.A", "LST.cps.ac","Lw.d2H","Lw.d18O",
+parameters <- c("L.level","rh", "nsws", "LST", "T.gap","AT","Runoff", "sal", "S.coeff",
+                "E.rate", "Evap", "LV.A", "LST.cps.ac","Lw.d2H","Lw.d18O","f",
                 "Ro.d2H", "Ro.d18O", "air.d2H","air.d18O","evap.d2H","evap.d18O")
 
 dat = list(L.level.rec = LL.mod, GSL.level = GSL.level.1286, GSL.area = GSL.area.1286, 
@@ -273,11 +221,17 @@ SI.lwmb$BUGSoutput$summary
 #check relative humidity
 plot(density(SI.lwmb$BUGSoutput$sims.list$rh)) #getting low
 
+#check advection coefficient
+plot(density(SI.lwmb$BUGSoutput$sims.list$f)) #
+
 #check wind speed
 plot(density(SI.lwmb$BUGSoutput$sims.list$nsws)) #normal
 
 #check LST ac
 plot(density(SI.lwmb$BUGSoutput$sims.list$LST.cps.ac)) #all over
+
+#check atm vapor d18O
+plot(density(SI.lwmb$BUGSoutput$sims.list$air.d18O)) 
 
 #check LST
 SI.lwmb.LST <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$LST,0.89)
@@ -286,17 +240,29 @@ lines(1:t,test.lwmb.LST[[2]],lty=2)
 lines(1:t,test.lwmb.LST[[3]],lty=2)
 #by far, temperature has the least constraint
 
-#check Runoff
+#check AT
+SI.lwmb.AT <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$AT,0.89)
+plot(1:t,test.lwmb.AT[[1]],type="l",ylim=c(15,30), main="LST")
+lines(1:t,test.lwmb.AT[[2]],lty=2)
+lines(1:t,test.lwmb.AT[[3]],lty=2)
+
+#check Runoff and evaporation
 SI.lwmb.Runoff <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$Runoff,0.89)
-plot(1:t,SI.lwmb.Runoff[[1]],type="l",ylim=c(0,12), main="Runoff")
+plot(1:t,SI.lwmb.Runoff[[1]],type="l",ylim=c(0,12), main="Runoff and Evap")
 lines(1:t,SI.lwmb.Runoff[[2]],lty=2)
 lines(1:t,SI.lwmb.Runoff[[3]],lty=2)
 
 #check evaporation
 SI.lwmb.Evap <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$Evap,0.89)
-plot(1:t,SI.lwmb.Evap[[1]],type="l",ylim=c(0,12), main="Evap")
-lines(1:t,SI.lwmb.Evap[[2]],lty=2)
-lines(1:t,SI.lwmb.Evap[[3]],lty=2)
+lines(1:t,SI.lwmb.Evap[[1]],col="red")
+lines(1:t,SI.lwmb.Evap[[2]],lty=2,col="red")
+lines(1:t,SI.lwmb.Evap[[3]],lty=2,col="red")
+
+#check evaporation rate
+SI.lwmb.Evaprate <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$E.rate,0.89)
+plot(1:t,SI.lwmb.Evaprate[[1]],type="l",main="Evap rate", ylim=c(0,1))
+lines(1:t,SI.lwmb.Evaprate[[2]],lty=2)
+lines(1:t,SI.lwmb.Evaprate[[3]],lty=2)
 
 #check lake level
 SI.lwmb.L.level <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$L.level,0.89)

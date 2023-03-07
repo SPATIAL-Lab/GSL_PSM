@@ -219,22 +219,17 @@ model {
   # Ro.d18O.int.sd <- 8
   # 
   #####Runoff amount#####
-  #not an autocorrelated time series 
+  # not an autocorrelated time series
   for (i in 1:t){
-    
-    Runoff[i] ~ dlnorm(log(Runoff.int), Runoff.pre) #allow some variation
-  
+
+    Runoff[i] ~ dlnorm(log(Runoff.int.mean), 2*log(Runoff.pre)) #allow some variation
+
   }
- 
-  #an initial value that centers around modern estimates
-  Runoff.int ~ dlnorm(Runoff.int.logmean, 1/Runoff.int.logsd^2) 
-  
-  Runoff.int.logmean = log(3.3) #mode input, precip + runoff + ground water (Mohammed 2011)
-  
-  Runoff.int.logsd = log(1.2)
+
+  Runoff.int.mean ~ dnorm(3.5,1/0.5^2)
   
   Runoff.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate)
-  Runoff.pre.shp = 30
+  Runoff.pre.shp = 100
   Runoff.pre.rate = 2
   
   #####LST time series####
@@ -259,22 +254,19 @@ model {
   LST[1] ~ dnorm(LST.int, LST.pre) #allowed some variation
   
   #an uninformative initial value: 20+-5 degrees C with a warm season bias, Steenburgh et al 2000
-  LST.int ~ dnorm(20, 1/5^2) T(10, 35)  
+  LST.int ~ dnorm(20, 1/5^2) T(10, 30)  
   
-  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.1 degrees error/10 years
-  LST.pre.shp = 200
+  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.15 degrees error/10 years
+  LST.pre.shp = 100
   LST.pre.rate = 2
 
   #####starting values####
   
-  nsws ~ dnorm(5.8, 1/0.2^2) #wind speed data from Steenburgh, 2000
+  nsws ~ dnorm(nsws.mean, 1/0.5^2) #allow some variation
+  nsws.mean ~ dnorm(5.8, 1/0.2^2) #wind speed data from Steenburgh, 2000
   
-  #relative humidity is set to center around 0.4 with a warm season bias (dry summer)
-  rh ~ dbeta(rh.a, rh.b)
-  
-  rh.b ~ dlnorm(log(100),1/log(2)^2)
-  
-  rh.a ~ dlnorm(log(70),1/log(2)^2)
+  rh ~ dnorm(rh.mean, 1/0.05^2) #allow some variation
+  rh.mean ~ dnorm(0.4, 1/0.02^2) #~0.4 +- 0.02 rh
   
   #lake volume, use bathymetric table
   LV[1] = interp.lin(L.level[1], GSL.level, GSL.volume)
@@ -286,7 +278,7 @@ model {
   L.level[1] ~ dnorm(1280,1/1^2) T(1275,1286)#m
   
   # #NaCl, MgCl2, Na2SO4, KCl
-  # salt.molar.mass = (58.44*0.7591 + 95.211*0.1092)
+  # salt.molar.mass = (58.44*0.7591 + 95.211*0.1092+142.04*0.0952 + 3.16/100*74.55)
   # #NaCl, MgCl2, Na2SO4, KCl
   # salt.molarg = (0.7591/58.44 + 0.1092/95.211 + 0.0952/142.04 + 3.16/100/74.55)
   

@@ -57,7 +57,7 @@ model {
     
     LV.A[i] = LV.P[i] - Evap[i] #LV.A is the real lake volume at the end of the seasonal cycle
     
-    E.rate[i] =  2.909* nsws * (LA.P[i]*1e6)^-0.05 * (S.coeff[i-1] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 183*1000
+    E.rate[i] =  2.909* nsws * (LA.P[i]*1e6)^-0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 183*1000
     #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
     
     #fresh water saturation vapor pressure Teten's eq in kPa
