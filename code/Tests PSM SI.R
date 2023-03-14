@@ -288,6 +288,19 @@ plot(1:t,SI.lwmb.Lw.d18O[[1]],type="l",ylim=c(-8,-2), main="Lake water d18O")
 lines(1:t,SI.lwmb.Lw.d18O[[2]],lty=2)
 lines(1:t,SI.lwmb.Lw.d18O[[3]],lty=2)
 
+#check the gap between runoff d2H and lake water d2H
+SI.lwmb.Rod2H <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$Ro.d2H,0.89)
+SI.lwmb.Lw.d2H<- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$Lw.d2H,0.89)
+plot(1:t,SI.lwmb.Rod2H[[1]],type="l",ylim=c(-200,-40), main="Runoff vs lake d2H")
+lines(1:t,SI.lwmb.Lw.d2H[[1]],col="green",lwd =2)
+#the gap is around 80 permil, measured gap can be as low as 0, or as high as 40
+
+#if epsilon higher plants are indeed -120/-100 for shrubs, then expected wax should be around -270/250!
+#so there are additional processes involved!
+
+#consider the mixture of three sources: autotropic and heterotrophic bacteria, 
+#and higher plants (only small fraction of the mixture?), or mixing with an oil source (fixed marine source would lead to !
+
 ###############test isotope fractionation equations######
 
 #first identify the source of lake water!
