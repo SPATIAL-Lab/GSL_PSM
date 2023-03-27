@@ -12,6 +12,8 @@ library(tidyr)
 
 setwd("C:/Users/ydmag/Google Drive/U of U/GSL proxy/GSL_PSM")
 
+source("code/1 Helper functions.R")
+
 #Get bathymetry chart for GSL
 GSL.bathy <- read.csv("data/GSL bathymetry.csv")
 

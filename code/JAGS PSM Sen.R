@@ -2,12 +2,20 @@ model {
 
   #evaluation
   for (i in 1:t){
-    # L.level.rec[i] ~ dnorm(L.level[i],1/0.1^2)
+    #Brine Shrimp cysts
+    BScyst.d2H.dat[i] ~ dnorm(BScyst.d2H[i],1/1^2)
     
-    Lw.d2H.dat[i] ~ dnorm(Lw.d2H[i],1/1^2)
+    BScyst.d18O.dat[i] ~ dnorm(BScyst.d18O[i],1/0.1^2)
     
-    Lw.d18O.dat[i] ~ dnorm(Lw.d18O[i],1/0.1^2)
+    #short chain wax
+    scwax.d2H.dat[i] ~ dnorm(scwax.d2H[i],1/2^2)
     
+    #long chain wax
+    lcwax.d2H.dat[i] ~ dnorm(lcwax.d2H[i],1/2^2)
+    
+    #carbonate d18O
+    d18O.car.dat[i] ~ dnorm(d18O.car[i],1/0.1^2)
+
   }
   
   ###SAMPLE MODEL###
@@ -17,7 +25,23 @@ model {
   ###ARCH MODEL###
   # use Age-depth model and sedimentarion rate to get to corresponding depth
   
-  depth
+  #averaging window t.avg.car for carbonates and 
+  t.avg.car
+  
+  lcwax.weights = ddirch(dirch.scale)
+  
+  for(i in 1:t.avg.lcwax){
+    dirch.scale[i] = pbeta(lcwax.wind[i], alpha= 1, beta = 2)
+  }
+  
+  lcwax.wind = 1:t.avg.lcwax/t.avg.lcwax
+  #use the probabilities of a beta distribution to set Dirichlet parameters (to make sure sum = 1)
+  
+  #use beta distribution, and with a mean of alpha/(alpha + beta)
+  #when alpha = 1, beta = 2, mean = 1/3. then window = 2700 years! -> 270 windows
+  t.avg.lcwax = 270 #how many time steps? 900 years of average storage for long chain alkanes
+
+  
   
   #sampling rbacon posterior and use it for Age-depth model
   #three age-depth model needed: 
@@ -46,10 +70,12 @@ model {
     scwax.d2H[i] = (rscwax.2H[i]-1) * 1e3
 
     #short chain wax from lake water
-    rscwax.2H[i] = rsc.alkane.2H[i] * (epsilon.2H.AkAcid/1000 + 1)
-    
-    ##short chain wax from lake water, but this is alkane, need to convert to n-acid
-    rsc.alkane.2H[i] = rlw2H.A[i] * alpha2H.sc.alkane[i]
+    rscwax.2H[i] = rlw2H.A[i] * alpha2H.sc.alkane[i]
+      
+    # rscwax.2H[i] = rsc.alkane.2H[i] * (epsilon.2H.AkAcid/1000 + 1)
+    # 
+    # ##short chain wax from lake water, but this is alkane, need to convert to n-acid
+    # rsc.alkane.2H[i] = rlw2H.A[i] * alpha2H.sc.alkane[i]
 
     #short chain wax n-C17 epsilon scale with salinity, Sachse and Sachs
     #Here try to use alpha for better consistency, and alpha cannot be larger than 1
@@ -90,7 +116,7 @@ model {
   
   ##short chain wax from lake water, but this is alkane, need to convert to n-acid
   #use Chikaraishi and Naraoka 2007
-  epsilon.2H.AkAcid ~ dnorm(25, 1/16^2)
+  # epsilon.2H.AkAcid ~ dnorm(25, 1/16^2)
   
   #simple version: use linear relationship by sachse and sachs 2008, but it does not apply to high salinity
   scwax.alpha.sl ~ dnorm(0.00080, 1/0.0001^2)
@@ -115,13 +141,19 @@ model {
   # epsilon2H.lcwax.mean = -121 #boreal trees, Kocecky 2019
   # epsilon2H.lcwax.sd = 22
   
-  #use the equation in McFarlin et al 2019, with slope and intercept
-  lcwax.d2H.inc ~ dnorm(-125, 1/20^2)
-  lcwax.d2H.slope ~ dnorm(0.62, 1/0.01^2)
+  #use the equation in McFarlin et al 2019, with slope and intercept, alkanes
+  lcwax.d2H.inc ~ dnorm(-129, 1/15^2)
+  lcwax.d2H.slope ~ dnorm(0.78, 1/0.01^2)
+  
+  # #use the equation in McFarlin et al 2019, with slope and intercept
+  # lcwax.d2H.inc ~ dnorm(-125, 1/20^2)
+  # lcwax.d2H.slope ~ dnorm(0.62, 1/0.01^2)
   
   #Assuming a gap between MAP d2H and runoff, as a prescribed covariance
   d2H.gap.MAP_Ro ~ dnorm(d2H.gap.MAP_Ro.mean, 1/1^2) #allow some variation
   d2H.gap.MAP_Ro.mean ~ dnorm(45,1/2^2) #gap mean = 45 +-2, informed by modern value
+  
+  #get mid-chain alkanes epsilon and water mixture.
   
   ###EVN MODEL###
   #results: lake water d18O, d2H, salinity
@@ -316,7 +348,7 @@ model {
   Ro.d18O[1] ~ dnorm(Ro.d18O.int, 1/0.2^2) #allowed some variation
   
   #an initial value that centers around modern estimates, but uninformative
-  Ro.d18O.int ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-10)
+  Ro.d18O.int ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-20,-12)
   
   Ro.d18O.int.mean = -17
   

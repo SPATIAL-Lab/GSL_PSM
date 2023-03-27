@@ -12,6 +12,8 @@ library(tidyr)
 
 setwd("C:/Users/ydmag/Google Drive/U of U/GSL proxy/GSL_PSM")
 
+source("code/1 Helper functions.R")
+
 #########################water and vapor isotopes###########################
 #isoWater to get atm vapor: Not so useful
 GSL.Vapor <- wiDB_data(minLat = 39.5, maxLat = 42.5, minLong = -113.5,
@@ -66,7 +68,7 @@ GSL.precip.mean.d18O <- mean(GSL.precip.iso$GSL.precip.data.d18O)
 GSL.precip.mean.d2H <- mean(GSL.precip.iso$GSL.precip.data.d2H)
 points(GSL.precip.mean.d18O,GSL.precip.mean.d2H,col="blue",pch = 15)
 d18O.prec.mean <- GSL.precip.mean.d18O
-d2H.prec.mean <- GSL.precip.mean.d2H
+d2H.prec.mean <- GSL.precip.mean.d2H #-104 per mil
 
 GSL.precip.mwl <- mwl(GSL.precip.iso, plot = TRUE)
 GSL.precip.mwl
