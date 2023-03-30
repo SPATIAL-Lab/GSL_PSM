@@ -3,7 +3,7 @@ model {
   #evaluation, use carb.bins
   for (i in 1:n.carb){
     #carbonate d18O
-    d18O.car.dat[i] ~ dnorm(d18O.car[carb.bins[i]],1/0.1^2)
+    d18O.car.dat[i] ~ dnorm(d18O.car[carb.bins[i]],1/d18O.car.sd[i]^2)
 
   }
   
@@ -65,11 +65,15 @@ model {
   
   #carbonates
   #assign age bins
-  carb.bins = trunc((age.carb.d + carb.age.gap)/age.res) #pure age offset
+  carb.bins = trunc(age.carb.d/age.res) #pure age offset
   
-  carb.age.gap ~ dnorm(carb.age.gap.mean, 1/100^2) #+-100 years
+  # carb.bins = trunc((age.carb.d + carb.age.gap)/age.res) #pure age offset
+  # 
+  # carb.age.gap ~ dnorm(carb.age.gap.mean, 1/200^2) T(0,1800) #+-100 years
   
-  carb.age.gap.mean ~ dnorm(1500,1/500^2)
+  # carb.age.gap.mean ~ dunif(200,1500)
+  
+  # carb.age.gap.mean ~ dnorm(1000,1/500^2) #this won't help!
   
   age.carb.d = post.age.carb[ind.dep,]
   
@@ -87,7 +91,7 @@ model {
   #cysts
   #assign age bins, it is simple for cysts
   #total age bins: t, goes from current to the past 
-  #t * 10 = calibrated age BP
+  #t * age.res = calibrated age BP
   cyst.bins = trunc(age.cyst.d/age.res)
   
   age.cyst.d = post.age.cyst[ind.dep,]
@@ -123,11 +127,6 @@ model {
 
     #short chain wax from lake water
     rscwax.2H[i] = rlw2H.A[i] * alpha2H.sc.alkane[i]
-      
-    # rscwax.2H[i] = rsc.alkane.2H[i] * (epsilon.2H.AkAcid/1000 + 1)
-    # 
-    # ##short chain wax from lake water, but this is alkane, need to convert to n-acid
-    # rsc.alkane.2H[i] = rlw2H.A[i] * alpha2H.sc.alkane[i]
 
     #short chain wax n-C17 epsilon scale with salinity, Sachse and Sachs
     #Here try to use alpha for better consistency, and alpha cannot be larger than 1
@@ -171,9 +170,9 @@ model {
   # epsilon.2H.AkAcid ~ dnorm(25, 1/16^2)
   
   #simple version: use linear relationship by sachse and sachs 2008, but it does not apply to high salinity
-  scwax.alpha.sl ~ dnorm(0.00080, 1/0.0001^2)
+  scwax.alpha.sl ~ dnorm(0.00080, 1/0.0001^2) T (0.0002,0.0015)
   
-  scwax.alpha.inc ~ dnorm(0.80745, 1/0.05^2)
+  scwax.alpha.inc ~ dnorm(0.80745, 1/0.05^2) T (0.6,1)
   
   #more complicated version: use regression 
   #use posterior of the short chain wax calibration in the calculation 
@@ -338,8 +337,9 @@ model {
   alphak.18O = 1 - 14.2 * (1 - rh) * (1 - f) * 1e-3
   
   #f: fraction of advected air over lake, stochastic, Tanganyika is set at 0.3, GSL is set at a similar value
-  f ~ dnorm(f.mean, 1/0.05^2) #allow some variation
-  f.mean ~ dnorm(0.3, 1/0.02^2) #~0.3 +- 0.02 rh
+  f ~ dbeta(20, 50)
+  # f ~ dnorm(f.mean, 1/0.05^2) T(0.2,0.4)#allow some variation, but with hard cutoffs
+  # f.mean ~ dnorm(0.3, 1/0.02^2) #~0.3 +- 0.02 rh
   
   #####Lake water isotopes initial values#####
   ##convert to lake water ratios
@@ -359,11 +359,11 @@ model {
   Lw.d18O[1] ~ dnorm(Lw.d18O.int, 1/0.2^2) #allowed some variation
   
   #an initial value that centers around modern estimates, uninformative prior
-  Lw.d18O.int ~ dnorm(Lw.d18O.int.mean, 1/Lw.d18O.int.sd^2) T(-15,5)
+  Lw.d18O.int ~ dnorm(Lw.d18O.int.mean, 1/Lw.d18O.int.sd^2) T(-10,5)
   
   Lw.d18O.int.mean = -5
   
-  Lw.d18O.int.sd = 4
+  Lw.d18O.int.sd = 2
   
   #####Runoff isotopes time series####
   #runoff ratio from delta values
@@ -382,10 +382,10 @@ model {
   }
   Ro.d18O.cps[1] ~ dnorm(0, Ro.d18O.pre) #centered around 0, allowed some variation
   
-  Ro.cps.ac ~ dunif(0, 0.8)
+  Ro.cps.ac ~ dunif(0.01, 0.8) #should runoff d18O be autocorrelated?
   
-  Ro.d18O.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate) # ~0.5 per mil error/10 years
-  Ro.d18O.pre.shp = 16
+  Ro.d18O.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate) # ~0.25 per mil error/10 years
+  Ro.d18O.pre.shp = 64
   Ro.d18O.pre.rate = 4
   
   #calculate Ro.d2H using d18O
@@ -422,7 +422,7 @@ model {
   Runoff.int.mean ~ dnorm(3.5,1/0.5^2)
   
   Runoff.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate)
-  Runoff.pre.shp = 100
+  Runoff.pre.shp = 50
   Runoff.pre.rate = 2
   
   #####LST time series####
@@ -453,7 +453,7 @@ model {
   LST.int ~ dnorm(20, 1/5^2) T(10, 30)  
   
   LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.15 degrees error/10 years
-  LST.pre.shp = 100
+  LST.pre.shp = 50
   LST.pre.rate = 2
   
   #####starting values####
@@ -461,8 +461,11 @@ model {
   nsws ~ dnorm(nsws.mean, 1/0.5^2) #allow some variation
   nsws.mean ~ dnorm(5.8, 1/0.2^2) #wind speed data from Steenburgh, 2000
   
-  rh ~ dnorm(rh.mean, 1/0.02^2) #allow some variation
-  rh.mean ~ dnorm(0.35, 1/0.05^2) #~0.35 +- 0.05 rh
+  #relative humidity ~0.35 +- 0.05
+  rh ~ dbeta(40, 72)
+  # 
+  # rh ~ dnorm(rh.mean, 1/0.02^2) #allow some variation
+  # rh.mean ~ dnorm(0.35, 1/0.05^2) #~0.35 +- 0.05 rh
   
   #lake starting level: 1280 +-1 meters
   L.level.int ~ dnorm(1280,1/1^2) T(1275,1286)#m

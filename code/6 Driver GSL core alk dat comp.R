@@ -54,7 +54,7 @@ dim(GSL.scwax.age) #row = iteration, col = depths
 dim(GSL.lcwax.age)
 
 #preliminary plot
-plot(GSL.alk.C17.summ$Depth_cm, GSL.alk.C17.summ$avg,type="l",col = "blue", ylim=c(-250,-100))
-lines(GSL.alk.C19.summ$Depth_cm, GSL.alk.C19.summ$avg,col="green")
-lines(GSL.alk.C25.summ$Depth_cm, GSL.alk.C25.summ$avg,col="orange")
-lines(GSL.alk.C29.summ$Depth_cm, GSL.alk.C29.summ$avg,col="red")
+plot(GSL.alk.C17.summ$Depth_cm, GSL.alk.C17.summ$C17.avg,type="l",col = "blue", ylim=c(-250,-100))
+lines(GSL.alk.C19.summ$Depth_cm, GSL.alk.C19.summ$C19.avg,col="green")
+lines(GSL.alk.C25.summ$Depth_cm, GSL.alk.C25.summ$C25.avg,col="orange")
+lines(GSL.alk.C29.summ$Depth_cm, GSL.alk.C29.summ$C29.avg,col="red")

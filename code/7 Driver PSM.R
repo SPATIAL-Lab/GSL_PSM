@@ -15,14 +15,14 @@ setwd("C:/Users/ydmag/Google Drive/U of U/GSL proxy/GSL_PSM")
 
 ################use synthetic data to test lake mass balance#####
 #age resolution
-age.res = 10 #this determins the number of time steps in the simulation
+age.res = 100 #this determins the number of time steps in the simulation
 
-Bacon.Age.d(max.depth)#cm, this is consistent with rbacon input
+Bacon.Age.d(1300)#cm, this is consistent with rbacon input
 
 max.age = max(Bacon.Age.d(max.depth)) #use the maximum age to constrain simulation 
 
 #number of time steps in the simulation
-t <- ceiling(max.age/age.res) + 200 #1006 time steps + 200 for buffer
+t <- ceiling(max.age/age.res) #+ 20 #101 time steps + 20 for buffer
 
 #######use calibrations for short chain wax fractionation
 # post.leng.scwax <- length(post)
@@ -48,28 +48,6 @@ d18O.vap.warm <- GSL.Vapor.warm.d18O
 #rbacon MCMC iternations
 n.bac.it <- nrow(GSL.carb.age)
 
-####### compile measured data#####
-
-d18O.car.dat <- GSL.carb$Ave.d18O
-
-d18O.car.sd <- GSL.carb$SD.d18O
-
-lcwax.d2H.dat <- GSL.alk.C29.naom$C29.avg
-
-lcwax.d2H.sd <- GSL.alk.C29.naom$C29.sd
-
-scwax.d2H.dat <- GSL.alk.C19.naom$C19.avg
-
-scwax.d2H.sd <- GSL.alk.C19.naom$C19.sd
-
-BScyst.d18O.dat <- GSL.cyst$Ave.d18O
-
-BScyst.d18O.sd <- rep(0.75, n.cyst)#fixed precision
-
-BScyst.d2H.dat <- GSL.cyst$Ave.d2H
-
-BScyst.d2H.sd <- rep(2, n.cyst) #fixed precision
-
 #carbonate ages
 post.age.carb <- GSL.carb.age
 
@@ -89,6 +67,30 @@ n.lc.wax <- ncol(GSL.lcwax.age)
 post.age.scwax <- GSL.scwax.age
 
 n.sc.wax <- ncol(GSL.scwax.age)
+
+####### compile measured data#####
+
+d18O.car.dat <- GSL.carb$Ave.d18O
+
+d18O.car.sd <- GSL.carb$SD.d18O
+
+lcwax.d2H.dat <- GSL.alk.C29.naom$C29.avg
+
+lcwax.d2H.sd <- rep(2.5, n.lc.wax)
+
+scwax.d2H.dat <- GSL.alk.C19.naom$C19.avg
+
+scwax.d2H.sd <- rep(2.5, n.sc.wax)
+
+BScyst.d18O.dat <- GSL.cyst$Ave.d18O
+
+BScyst.d18O.sd <- rep(0.75, n.cyst)#fixed precision
+
+BScyst.d2H.dat <- GSL.cyst$Ave.d2H
+
+BScyst.d2H.sd <- rep(2, n.cyst) #fixed precision
+
+
 
 #parameters to save
 parameters <- c("L.level","rh", "nsws", "LST", "T.gap","AT","Runoff", "sal", "S.coeff",
@@ -122,9 +124,9 @@ dat = list(GSL.level = GSL.level.1286, GSL.area = GSL.area.1286,
 t1 = proc.time()
 
 set.seed(t1[3])
-n.iter = 2e3
-n.burnin = 1e3
-n.thin = 1
+n.iter = 1e4
+n.burnin = 5e3
+n.thin = 2
 
 #Run it
 SI.Arc = do.call(jags.parallel,list(model.file = "code/JAGS PSM Arc.R", 
@@ -133,11 +135,12 @@ SI.Arc = do.call(jags.parallel,list(model.file = "code/JAGS PSM Arc.R",
                                      n.burnin = n.burnin, n.thin = n.thin))
 
 #Time taken
-proc.time() - t1 #150 seconds for t = 1206, n.iter = 2e3
-#estimated time taken: t = 1206 (decadal variation), 1.4 hours for n.iter = 2e4
+proc.time() - t1 
+#estimated time taken: t = 131 (centenial variation), 2.3 hours for n.iter = 2e4
 
 SI.Arc$BUGSoutput$summary
 
+par(mfrow=c(3,3))
 #check relative humidity
 plot(density(SI.Arc$BUGSoutput$sims.list$rh)) #getting low
 
@@ -153,63 +156,134 @@ plot(density(SI.Arc$BUGSoutput$sims.list$LST.cps.ac)) #all over
 #check atm vapor d18O
 plot(density(SI.Arc$BUGSoutput$sims.list$air.d18O)) 
 
+#check brine shrimp cyst intercept
+plot(density(SI.Arc$BUGSoutput$sims.list$BScyst.inc.2H)) 
+abline(v=-92)
+
+#check brine shrimp cyst slopes
+plot(density(SI.Arc$BUGSoutput$sims.list$BScyst.slope.lw.2H)) 
+abline(v=0.34)
+
+#check brine shrimp cyst intercept
+plot(density(SI.Arc$BUGSoutput$sims.list$BScyst.slope.diet.2H)) 
+abline(v=0.26)
+
+#check brine shrimp cyst intercept
+plot(density(SI.Arc$BUGSoutput$sims.list$BScyst.inc.18O)) 
+abline(v=15.9)
+#check brine shrimp cyst slopes
+plot(density(SI.Arc$BUGSoutput$sims.list$BScyst.slope.lw.18O)) 
+abline(v=0.692)
+#check brine shrimp cyst intercept
+plot(density(SI.Arc$BUGSoutput$sims.list$BScyst.slope.diet.18O)) 
+abline(v=0.101)
+
+plot(density(SI.Arc$BUGSoutput$sims.list$d2H.gap.MAP_Ro)) 
+abline(v=45)
+
+#epsilon BS diet (smaller than pure algea, means that there is trophic enrichment?)
+plot(density(SI.Arc$BUGSoutput$sims.list$epsilon.2H.carbohy)) 
+abline(v=-100)
+
+plot(density(SI.Arc$BUGSoutput$sims.list$epsilon.18O.carbohy)) 
+abline(v=27)
+
+plot(density(SI.Arc$BUGSoutput$sims.list$lcwax.d2H.inc)) 
+abline(v=-129) #much smaller than -129, at -103!, mixing with a -170 per mil source?
+
+plot(density(SI.Arc$BUGSoutput$sims.list$lcwax.d2H.slope))
+abline(v=0.78)
+
+plot(density(SI.Arc$BUGSoutput$sims.list$carb.age.gap))
+abline(v=0.78)
+
+plot(density(SI.Arc$BUGSoutput$sims.list$scwax.alpha.sl))#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+abline(v=0.0008)#this is very wrong! Use a different prior! Or use something else to constrain salinity
+
+plot(density(SI.Arc$BUGSoutput$sims.list$scwax.alpha.inc))#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#Or remove this relationship!
+
+SI.Arc.scalpha <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$alpha2H.sc.alkane,0.89)
+plot(1:t*age.res, SI.Arc.scalpha[[1]],type="l",ylim=c(0.6,1), main="sc alpha")
+lines(1:t*age.res,SI.Arc.scalpha[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.scalpha[[3]],lty=2)
+
 #check LST
 SI.Arc.LST <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$LST,0.89)
-plot(1:t,SI.Arc.LST[[1]],type="l",ylim=c(15,30), main="LST")
-lines(1:t,SI.Arc.LST[[2]],lty=2)
-lines(1:t,SI.Arc.LST[[3]],lty=2)
+plot(1:t*age.res,SI.Arc.LST[[1]],type="l",ylim=c(0,30), main="LST")
+lines(1:t*age.res,SI.Arc.LST[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.LST[[3]],lty=2)
 #by far, temperature has the least constraint
 
 #check AT
 SI.Arc.AT <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$AT,0.89)
-plot(1:t,test.lwmb.AT[[1]],type="l",ylim=c(15,30), main="LST")
-lines(1:t,test.lwmb.AT[[2]],lty=2)
-lines(1:t,test.lwmb.AT[[3]],lty=2)
+plot(1:t*age.res,test.Arc.AT[[1]],type="l",ylim=c(15,30), main="LST")
+lines(1:t*age.res,test.Arc.AT[[2]],lty=2)
+lines(1:t*age.res,test.Arc.AT[[3]],lty=2)
 
 #check Runoff and evaporation
-SI.lwmb.Runoff <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$Runoff,0.89)
-plot(1:t,SI.lwmb.Runoff[[1]],type="l",ylim=c(0,12), main="Runoff and Evap")
-lines(1:t,SI.lwmb.Runoff[[2]],lty=2)
-lines(1:t,SI.lwmb.Runoff[[3]],lty=2)
+SI.Arc.Runoff <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$Runoff,0.89)
+plot(1:t*age.res,SI.Arc.Runoff[[1]],type="l",ylim=c(0,12), main="Runoff and Evap")
+lines(1:t*age.res,SI.Arc.Runoff[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.Runoff[[3]],lty=2)
 
 #check evaporation
-SI.lwmb.Evap <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$Evap,0.89)
-lines(1:t,SI.lwmb.Evap[[1]],col="red")
-lines(1:t,SI.lwmb.Evap[[2]],lty=2,col="red")
-lines(1:t,SI.lwmb.Evap[[3]],lty=2,col="red")
+SI.Arc.Evap <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$Evap,0.89)
+lines(1:t*age.res,SI.Arc.Evap[[1]],col="red")
+lines(1:t*age.res,SI.Arc.Evap[[2]],lty=2,col="red")
+lines(1:t*age.res,SI.Arc.Evap[[3]],lty=2,col="red")
 
 #check evaporation rate
-SI.lwmb.Evaprate <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$E.rate,0.89)
-plot(1:t,SI.lwmb.Evaprate[[1]],type="l",main="Evap rate", ylim=c(0,1))
-lines(1:t,SI.lwmb.Evaprate[[2]],lty=2)
-lines(1:t,SI.lwmb.Evaprate[[3]],lty=2)
+SI.Arc.Evaprate <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$E.rate,0.89)
+plot(1:t*age.res,SI.Arc.Evaprate[[1]],type="l",main="Evap rate", ylim=c(0,2))
+lines(1:t*age.res,SI.Arc.Evaprate[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.Evaprate[[3]],lty=2)
 
 #check lake level
-SI.lwmb.L.level <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$L.level,0.89)
-plot(1:t,SI.lwmb.L.level[[1]],type="l",ylim=c(1275,1285), main="Lake level")
-lines(1:t,SI.lwmb.L.level[[2]],lty=2)
-lines(1:t,SI.lwmb.L.level[[3]],lty=2)
-
-#check salinity
-SI.lwmb.sal <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$sal,0.89)
-plot(1:t,SI.lwmb.sal[[1]],type="l",ylim=c(50,355), main="Salinity")
-lines(1:t,SI.lwmb.sal[[2]],lty=2)
-lines(1:t,SI.lwmb.sal[[3]],lty=2)
+SI.Arc.L.level <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$L.level,0.89)
+plot(1:t*age.res,SI.Arc.L.level[[1]],type="l",ylim=c(1276,1286), main="Lake level")
+lines(1:t*age.res,SI.Arc.L.level[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.L.level[[3]],lty=2)
 
 #check runoff isotopes
-SI.lwmb.Rod18O <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$Ro.d18O,0.89)
-plot(1:t,SI.lwmb.Rod18O[[1]],type="l",ylim=c(-30,-10), main="Runoff d18O")
-lines(1:t,SI.lwmb.Rod18O[[2]],lty=2)
-lines(1:t,SI.lwmb.Rod18O[[3]],lty=2)
+SI.Arc.Rod18O <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$Ro.d18O,0.89)
+plot(1:t*age.res,SI.Arc.Rod18O[[1]],type="l",ylim=c(-30,-10), main="Runoff d18O")
+lines(1:t*age.res,SI.Arc.Rod18O[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.Rod18O[[3]],lty=2)
+
+SI.Arc.Rod2H <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$Ro.d2H,0.89)
+plot(1:t*age.res,SI.Arc.Rod2H[[1]],type="l",ylim=c(-200,-140), main="Runoff d2H")
+lines(1:t*age.res,SI.Arc.Rod2H[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.Rod2H[[3]],lty=2)
 
 #check evaporation isotopes
-SI.lwmb.evapd18O <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$evap.d18O,0.89)
-plot(1:t,SI.lwmb.evapd18O[[1]],type="l",ylim=c(-30,-10), main="Evap d18O")
-lines(1:t,SI.lwmb.evapd18O[[2]],lty=2)
-lines(1:t,SI.lwmb.evapd18O[[3]],lty=2)
+SI.Arc.evapd18O <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$evap.d18O,0.89)
+plot(1:t*age.res,SI.Arc.evapd18O[[1]],type="l",ylim=c(-30,-10), main="Evap d18O")
+lines(1:t*age.res,SI.Arc.evapd18O[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.evapd18O[[3]],lty=2)
 
 #check lake water isotopes
-SI.lwmb.Lw.d18O <- MCMC.CI.bound(SI.lwmb$BUGSoutput$sims.list$Lw.d18O,0.89)
-plot(1:t,SI.lwmb.Lw.d18O[[1]],type="l",ylim=c(-8,-2), main="Lake water d18O")
-lines(1:t,SI.lwmb.Lw.d18O[[2]],lty=2)
-lines(1:t,SI.lwmb.Lw.d18O[[3]],lty=2)
+SI.Arc.Lw.d18O <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$Lw.d18O,0.89)
+plot(1:t*age.res,SI.Arc.Lw.d18O[[1]],type="l",ylim=c(-10,0), main="Lake water d18O")
+lines(1:t*age.res,SI.Arc.Lw.d18O[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.Lw.d18O[[3]],lty=2)
+
+SI.Arc.Lw.d2H <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$Lw.d2H,0.89)
+plot(1:t*age.res,SI.Arc.Lw.d2H[[1]],type="l",ylim=c(-100,0), main="Lake water d2H")
+lines(1:t*age.res,SI.Arc.Lw.d2H[[2]],lty=2)
+lines(1:t*age.res,SI.Arc.Lw.d2H[[3]],lty=2)
+
+#check the gap between runoff d2H and lake water d2H
+SI.Arc.Rod2H <- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$Ro.d2H,0.89)
+SI.Arc.Lw.d2H<- MCMC.CI.bound(SI.Arc$BUGSoutput$sims.list$Lw.d2H,0.89)
+plot(1:t*age.res,SI.Arc.Rod2H[[1]],type="l",ylim=c(-200,0), main="Runoff vs lake d2H")
+lines(1:t*age.res,SI.Arc.Lw.d2H[[1]],col="green",lwd =2)
+
+#check lake water evaporation line
+plot(SI.Arc.Lw.d18O[[1]],SI.Arc.Lw.d2H[[1]],xlim=c(-10,3),ylim=c(-100,0))
+abline(a=-41.189633, b=5.031288) 
+
+#check meteoric line
+plot(SI.Arc.Rod18O[[1]],SI.Arc.Rod2H[[1]],xlim=c(-25,-15),ylim=c(-200,-120))
+abline(a=0.7314362, b=7.5242923)
