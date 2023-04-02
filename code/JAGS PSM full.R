@@ -3,7 +3,7 @@ model {
   #evaluation, use carb.bins
   for (i in 1:n.carb){
     #carbonate d18O
-    d18O.car.dat[i] ~ dnorm(d18O.car[carb.bins[i]],1/0.1^2)
+    d18O.car.dat[i] ~ dnorm(carb.d18O.dc[carb.bins[i]],1/d18O.car.sd[i]^2)
 
   }
   
@@ -17,92 +17,138 @@ model {
   }
   
   #evaluation, use scwax and lcwax bins
-  for (i in 1:n.alk){
+  for (i in 1:n.sc.wax){
     #short chain wax
     scwax.d2H.dat[i] ~ dnorm(scwax.d2H[scwax.bins[i]], 1/scwax.d2H.sd[i]^2)
     
-    #long chain wax
-    lcwax.d2H.dat[i] ~ dnorm(lcwax.d2H[lcwax.bins[i]], 1/lcwax.d2H.sd[i]^2)
-
   }
-
+  
+  for (i in 1:n.lc.wax){
+    #long chain wax
+    lcwax.d2H.dat[i] ~ dnorm(lcwax.d2H.dc[lcwax.bins[i]], 1/lcwax.d2H.sd[i]^2)
+    
+  }
   
   ###SAMPLE MODEL###
-  
 
+  #################mapping depth onto t################# 
+
+  #assign age bins
+  carb.bins = t - trunc(age.carb.d/age.res) #pure age offset
+  
+  age.carb.d = post.age.carb[ind.dep,]
+  
+  lcwax.bins = t - trunc(age.lc.d/age.res)
+  
+  scwax.bins = t - trunc(age.sc.d/age.res)
+  
+  age.lc.d = post.age.lcwax[ind.dep,]
+  
+  age.sc.d = post.age.scwax[ind.dep,]
+  
+  cyst.bins = t - trunc(age.cyst.d/age.res)
+  
+  age.cyst.d = post.age.cyst[ind.dep,]
+  
+  ind.dep ~ dcat(rep(1, n.bac.it))
   
   ###ARCH MODEL###
   #################signal attenuation with certain types of data#######################
-  # use Age-depth model and sedimentarion rate to get to corresponding depth
   
-  #averaging window t.avg.car for carbonates and 
-  # t.avg.car
-  # 
-  # lcwax.weights = ddirch(dirch.scale)
-  # 
-  # for(i in 1:t.avg.lcwax){
-  #   dirch.scale[i] = pbeta(lcwax.wind[i], alpha= 1, beta = 2)
+  #modeling storage effect of long chain wax, creating a simulated downcore record
+  #with averaging window t.avg.car, and averaging weights w.avg.lcwax for lc wax and
+  
+  #get weighted averaged lc wax
+  # for (i in 1:(t - t.avg)){
+  #   lcwax.d2H.dc[i] = sum(lcwax.d2H[i:(i + t.avg - 1)] * w.avg.lcwax)*(1 - f.C14d.lcwax) + f.C14d.lcwax* d2H.C14d.lcwax
   # }
+  
+  #get weighted averaged lc wax
+  for (i in t.avg:t ){
+    lcwax.d2H.dc[i] = sum(lcwax.d2H[(i - t.avg+1):i] * w.avg.lcwax)*(1 - f.C14d.lcwax) + f.C14d.lcwax* d2H.C14d.lcwax
+  }
+  
+  #evaluate lc wax 14C offset
+  # lcwax.offset ~ dnorm(lcwax.offset.m, 1/200^2) #uncertainty of 200 years for long chain wax 
   # 
-  # lcwax.wind = 1:t.avg.lcwax/t.avg.lcwax
-  # #use the probabilities of a beta distribution to set Dirichlet parameters (to make sure sum = 1)
+  # lcwax.offset.m = sum(0:(t.avg - 1) * age.res * w.avg.lcwax)*(1 - f.C14d.lcwax) + 50000 * f.C14d.lcwax
+  
+  lcwax.offset ~ dnorm(lcwax.offset.m, 1/200^2) #uncertainty of 200 years for long chain wax 
+  
+  lcwax.offset.m = sum(abs((1 - t.avg):0) * age.res * w.avg.lcwax)*(1 - f.C14d.lcwax) + 50000 * f.C14d.lcwax
+  
+  #normalized weights
+  # w.avg.lcwax <- (w.trnpt.lcwax+w.stor.lcwax)/sum(w.trnpt.lcwax+w.stor.lcwax)
+  
+  w.avg.lcwax <- (w.trnpt.lcwax+w.stor.lcwax)/sum(w.trnpt.lcwax+w.stor.lcwax)
+  
+  # w.trnpt.lcwax = dnorm(0:(t.avg - 1), trnpt.lcwax.mean, 1/10^2)
+  
+  w.trnpt.lcwax = dnorm(abs((1 - t.avg):0), trnpt.lcwax.mean, 1/10^2)
+  
+  trnpt.lcwax.mean ~ dunif(1,t.avg-5) #uninformative prior
+  
+  # w.stor.lcwax = dexp(0:(t.avg - 1), stor.par.lcwax)
+  
+  w.stor.lcwax = dexp(abs((1 - t.avg):0), stor.par.lcwax)
+  
+  stor.par.lcwax ~ dbeta(10,80) #1/stor.par ~0.1, longer storage for lc wax
+  
+  #very little carbon dead lc alkanes
+  f.C14d.lcwax ~ dbeta(2,100) #~2% dead material
+  
+  d2H.C14d.lcwax ~ dnorm(-150,1/30^2)#mesozoic lc wax is !-150 per mil, sd = 30!!!!!!!!!!!!!!!!!!!!!!!!!
+  
+  #get weighted averaged carbonate d18O
+  # for (i in 1:(t - t.avg)){
+  #   carb.d18O.dc[i] = sum(carb.d18O[i:(i + t.avg - 1)] * w.avg.carb)*(1 - f.C14d.carb) + d18O.C14d.carb * f.C14d.carb 
+  # }
+  
+  for (i in t.avg:t ){
+    carb.d18O.dc[i] = sum(carb.d18O[(i - t.avg+1):i] * w.avg.carb)*(1 - f.C14d.carb) + d18O.C14d.carb * f.C14d.carb
+  }
+  
+  #evaluate carbonate 14C offset
+  # carb.offset ~ dnorm(carb.offset.m, 1/200^2) #uncertainty of 200 years for carbonates 
   # 
-  # #use beta distribution, and with a mean of alpha/(alpha + beta)
-  # #when alpha = 1, beta = 2, mean = 1/3. then window = 2700 years! -> 270 windows
-  # t.avg.lcwax = 270 #how many time steps? 900 years of average storage for long chain alkanes
-  # 
+  # carb.offset.m = sum(0:(t.avg - 1) * age.res * w.avg.carb)*(1 - f.C14d.carb) + 50000 * f.C14d.carb
   
+  #evaluate carbonate 14C offset
+  carb.offset ~ dnorm(carb.offset.m, 1/200^2) #uncertainty of 200 years for carbonates 
   
-  #################mapping depth onto t################# 
+  carb.offset.m = sum(abs((1 - t.avg):0) * age.res * w.avg.carb)*(1 - f.C14d.carb) + 50000 * f.C14d.carb
+  
+  #normalized weights
+  # w.avg.carb = (w.trnpt.carb+w.stor.carb)/sum(w.trnpt.carb+w.stor.carb)
+  
+  w.avg.carb = (w.trnpt.carb+w.stor.carb)/sum(w.trnpt.carb+w.stor.carb)
+  
+  # w.trnpt.carb = dnorm(0:(t.avg - 1), trnpt.carb.mean, 1/5^2)
+  
+  w.trnpt.carb = dnorm(abs((1 - t.avg):0), trnpt.carb.mean, 1/5^2)
+  
+  trnpt.carb.mean ~ dunif(1,t.avg-5) #uninformative prior
+  
+  # w.stor.carb = dexp(0:(t.avg - 1), stor.par.carb)
+  
+  w.stor.carb = dexp(abs((1 - t.avg):0), stor.par.carb)
+  
+  stor.par.carb ~ dbeta(5,10) #1/stor.par ~0.3, shorter storage for carbonates
+  
+  f.C14d.carb ~ dbeta(10,200) #~5% carbon dead material
+  
+  d18O.C14d.carb ~ dnorm(-5,1/3^2)#lake carbonate has d18O near -5 per mil, sd = 3!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  #sample the age-depth chart from the posterior
-
-  #extract ages from posterior
-  
-  #carbonates
-  #assign age bins
-  carb.bins = trunc((age.carb.d + carb.age.gap)/age.res) #pure age offset
-  
-  carb.age.gap ~ dnorm(carb.age.gap.mean, 1/100^2) #+-100 years
-  
-  carb.age.gap.mean ~ dnorm(1500,1/500^2)
-  
-  age.carb.d = post.age.carb[ind.dep.carb]
-  
-  ind.dep.carb ~ dcat(n.bac.it)
-  
-  #alkanes
-  #assign age bins, for lcwax, there is storage effect
-  lcwax.bins = trunc(age.alk.d/age.res)
-  
-  #assign age bins, it is simple for scwax
-  scwax.bins = trunc(age.alk.d/age.res)
-  
-  age.alk.d = post.age.alk[ind.dep.alk]
-  
-  ind.dep.alk ~ dcat(n.bac.it)
-  
-  #cysts
-  #assign age bins, it is simple for cysts
-  cyst.bins = trunc(age.cyst.d/age.res)
-  
-  age.cyst.d = post.age.cyst[ind.dep.cyst,]
-  
-  ind.dep.cyst ~ dcat(n.bac.it)
-
-  
-  #sampling rbacon posterior and use it for Age-depth model
-  #three age-depth model needed: 
-  #brine shrimp cysts and sc wax (model 1)
-  #lc wax, mixing with a shale source (model 2)
-  #carbonates, winowing and age offsets
-  
   ###SEN MODEL###
   for (i in 1:t){
     #BS cysts
     BScyst.d2H[i] = BScyst.slope.lw.2H * Lw.d2H[i] + BScyst.slope.diet.2H * BSdiet.d2H[i] + BScyst.inc.2H
-    
+
     BScyst.d18O[i] = BScyst.slope.lw.18O * Lw.d18O[i] + BScyst.slope.diet.18O * BSdiet.d18O[i] + BScyst.inc.18O
+
+    # BScyst.d2H[i] = 0.34 * Lw.d2H[i] + 0.26 * BSdiet.d2H[i] -92
+    # 
+    # BScyst.d18O[i] = 0.692 * Lw.d18O[i] + 0.101 * BSdiet.d18O[i] + 15.9
     
     #convert back to delta values
     BSdiet.d2H[i] = (rBSdiet.2H[i]-1) * 1e3
@@ -110,24 +156,20 @@ model {
     BSdiet.d18O[i] = (rBSdiet.18O[i]-1) * 1e3
     
     #model algal cellulose d2H and d18O 
-    rBSdiet.2H[i] = rlw2H.A[i] * (epsilon.2H.carbohy/1000 + 1)
+    rBSdiet.2H[i] = rprx.L.2H[i] * (epsilon.2H.carbohy/1000 + 1)
     
-    rBSdiet.18O[i] = rlw18O.A[i] * (epsilon.18O.carbohy/1000 + 1)
+    rBSdiet.18O[i] = rprx.L.18O[i] * (epsilon.18O.carbohy/1000 + 1)
     
-    #short chain wax from lake water, convert ratio to delta 2H
+    #short chain wax from proximal lake water, convert ratio to delta 2H
     scwax.d2H[i] = (rscwax.2H[i]-1) * 1e3
 
-    #short chain wax from lake water
-    rscwax.2H[i] = rlw2H.A[i] * alpha2H.sc.alkane[i]
-      
-    # rscwax.2H[i] = rsc.alkane.2H[i] * (epsilon.2H.AkAcid/1000 + 1)
-    # 
-    # ##short chain wax from lake water, but this is alkane, need to convert to n-acid
-    # rsc.alkane.2H[i] = rlw2H.A[i] * alpha2H.sc.alkane[i]
+    #short chain wax from proximal lake water
+    rscwax.2H[i] = rprx.L.2H[i] * alpha2H.sc.alkane[i]
+    
 
     #short chain wax n-C17 epsilon scale with salinity, Sachse and Sachs
     #Here try to use alpha for better consistency, and alpha cannot be larger than 1
-    alpha2H.sc.alkane[i] = ifelse(sal[i] * scwax.alpha.sl + scwax.alpha.inc > 1,1, sal[i] * scwax.alpha.sl + scwax.alpha.inc)
+    alpha2H.sc.alkane[i] = ifelse(prx.sal[i] * scwax.alpha.sl + scwax.alpha.inc > 1,1, prx.sal[i] * scwax.alpha.sl + scwax.alpha.inc)
 
     #long chain wax 
     #use the equation in McFarlin et al 2019, with slope and intercept
@@ -140,36 +182,32 @@ model {
     # rlcwax2H[i] = rRo.2H[i]*(1 + epsilon2H.lcwax/1e3) #this is a fixed epsilon relationship
 
     #lake carbonate d18O (VPDB) from lake water d18O (VSMOW)
-    d18O.car[i] = Lw.d18O[i] - 0.27 + 25.8 - sqrt(25.8^2 - 11.1*(16.1 - LST[i])) #Dee et al. 2018
+    carb.d18O[i] = Lw.d18O[i] - 0.27 + 25.8 - sqrt(25.8*25.8 - 11.1*(16.1 - LST[i])) #Dee et al. 2018
 
   }
   #Brine shrimp cyst slopes and intercepts, Nielson and Bowen 2010
   BScyst.slope.lw.2H ~ dnorm(0.34, 1/0.019^2)
-  
+
   BScyst.slope.diet.2H ~ dnorm(0.26, 1/0.025^2)
-  
+
   BScyst.inc.2H ~ dnorm(-92, 1/3.6^2)
-  
+
   BScyst.slope.lw.18O ~ dnorm(0.692, 1/0.013^2)
-  
+
   BScyst.slope.diet.18O ~ dnorm(0.101, 1/0.017^2)
-  
+
   BScyst.inc.18O ~ dnorm(15.9, 1/0.31^2)
   
   #carbohydrate 2H fractionation for Brine Shrimp diet (algae), Estep and Hoering 1980 
-  epsilon.2H.carbohy ~ dnorm(-100, 1/10^2)
+  epsilon.2H.carbohy ~ dnorm(-100, 1/15^2)
   
   #carbohydrate 18O fractionation for Brine Shrimp diet (algae), DeNiro and Epstine 1981 
-  epsilon.18O.carbohy ~ dnorm(27, 1/3^2)
-  
-  ##short chain wax from lake water, but this is alkane, need to convert to n-acid
-  #use Chikaraishi and Naraoka 2007
-  # epsilon.2H.AkAcid ~ dnorm(25, 1/16^2)
+  epsilon.18O.carbohy ~ dnorm(27, 1/5^2)
   
   #simple version: use linear relationship by sachse and sachs 2008, but it does not apply to high salinity
-  scwax.alpha.sl ~ dnorm(0.00080, 1/0.0001^2)
+  scwax.alpha.sl ~ dnorm(0.00080, 1/0.0001^2) T (0.0002,0.0015)
   
-  scwax.alpha.inc ~ dnorm(0.80745, 1/0.05^2)
+  scwax.alpha.inc ~ dnorm(0.80745, 1/0.05^2) T (0.79,0.83)
   
   #more complicated version: use regression 
   #use posterior of the short chain wax calibration in the calculation 
@@ -181,8 +219,6 @@ model {
   # scwax.inc[indx.scwax]
   # indx.scwax ~ dcat(rep(1, post.leng.scwax))
   
-  #conversion from alkane to alkanoic acid (plus fractionation)
-  
   #also explore alternatives, such as all plants from mid latitudes 30 - 60 degrees Sensitivity test
   #set up epsilon.lcwax, using , Cn-29, taken from Konecky
   # epsilon2H.lcwax ~ dnorm(epsilon2H.lcwax.mean, 1/epsilon2H.lcwax.sd^2)
@@ -193,15 +229,33 @@ model {
   lcwax.d2H.inc ~ dnorm(-129, 1/15^2)
   lcwax.d2H.slope ~ dnorm(0.78, 1/0.01^2)
   
-  # #use the equation in McFarlin et al 2019, with slope and intercept
+  # #use the equation in McFarlin et al 2019, with slope and intercept for n-acid
   # lcwax.d2H.inc ~ dnorm(-125, 1/20^2)
   # lcwax.d2H.slope ~ dnorm(0.62, 1/0.01^2)
   
   #Assuming a gap between MAP d2H and runoff, as a prescribed covariance
   d2H.gap.MAP_Ro ~ dnorm(d2H.gap.MAP_Ro.mean, 1/1^2) #allow some variation
-  d2H.gap.MAP_Ro.mean ~ dnorm(45,1/2^2) #gap mean = 45 +-2, informed by modern value
+  d2H.gap.MAP_Ro.mean ~ dnorm(45,1/5^2) #gap mean = 50 +-5, informed by modern value
   
   #get mid-chain alkanes epsilon and water mixture.
+  #proximal lake water mixing
+  #mixing with runoff
+  
+  #proximal lake salinity
+  prx.sal = sal.P * prx.L.v/(prx.L.v + Runoff) #diluted by runoff
+  
+  #convert back to delta values
+  prx.L.d2H = (rprx.L.2H - 1) * 1e3
+  
+  prx.L.d18O = (rprx.L.18O- 1) * 1e3
+
+  rprx.L.2H = (prx.L.v * rlw2H.A + Runoff * rRo.2H)/(prx.L.v + Runoff)
+  
+  rprx.L.18O = (prx.L.v * rlw18O.A + Runoff * rRo.18O)/(prx.L.v + Runoff)
+  
+  prx.L.v = LV.A * f.m.ro
+  #fraction of lake water that is mixed with runoff, ~20%
+  f.m.ro ~ dbeta(10,40)
   
   ###EVN MODEL###
   #results: lake water d18O, d2H, salinity
@@ -221,6 +275,8 @@ model {
     
     #lake evaporation amount, km3
     Evap[i] = E.rate[i] * LA.P[i]/1000
+    
+    sal.A[i] = interp.lin(L.level[i], GSL.level, GSL.sali)
     
     L.level[i] = interp.lin(LV.A[i], GSL.volume, GSL.level)
     
@@ -245,15 +301,15 @@ model {
     
     Alpha.18O[i] = exp(1137/(LST.k[i]^2)- 0.4156/LST.k[i] - 0.00207) * O.frac.coef[i] #Majoube 1971 + salt correction
     
-    H.frac.coef[i] = 1- sal.corr.d2H/1000*(sal[i]/sal.mol.ms)
+    H.frac.coef[i] = 1- sal.corr.d2H/1000*(sal.P[i]/sal.mol.ms)
     
-    O.frac.coef[i] = 1- sal.corr.d18O/1000*(sal[i]/sal.mol.ms)
+    O.frac.coef[i] = 1- sal.corr.d18O/1000*(sal.P[i]/sal.mol.ms)
     
     #saline water vapor pressure coefficient using a combination of data
-    S.coeff[i] = 1-9.098e-07*sal[i]^2.267
+    S.coeff[i] = 1-9.098e-07*sal.P[i]^2.267
     
-    #use salinity table to interpolate salinity, *GSL.level and GSL.sali are inputs*
-    sal[i] = interp.lin(L.level[i-1], GSL.level, GSL.sali)
+    #use salinity table to interpolate salinity, *GSL.volume and GSL.sali are inputs*
+    sal.P[i] = interp.lin(LV.P[i], GSL.volume, GSL.sali)
     
     #calculate mixed lake and runoff ratio before evaporation
     rlw2H.P[i] = (rlw2H.A[i - 1] * LV.A[i - 1]  + rRo.2H[i] * Runoff[i])/LV.P[i]
@@ -334,8 +390,10 @@ model {
   alphak.18O = 1 - 14.2 * (1 - rh) * (1 - f) * 1e-3
   
   #f: fraction of advected air over lake, stochastic, Tanganyika is set at 0.3, GSL is set at a similar value
-  f ~ dnorm(f.mean, 1/0.05^2) #allow some variation
-  f.mean ~ dnorm(0.3, 1/0.02^2) #~0.3 +- 0.02 rh
+  f = 0.3
+  # f ~ dbeta(20, 50)
+  # f ~ dnorm(f.mean, 1/0.05^2) T(0.2,0.4)#allow some variation, but with hard cutoffs
+  # f.mean ~ dnorm(0.3, 1/0.02^2) #~0.3 +- 0.02 rh
   
   #####Lake water isotopes initial values#####
   ##convert to lake water ratios
@@ -355,11 +413,11 @@ model {
   Lw.d18O[1] ~ dnorm(Lw.d18O.int, 1/0.2^2) #allowed some variation
   
   #an initial value that centers around modern estimates, uninformative prior
-  Lw.d18O.int ~ dnorm(Lw.d18O.int.mean, 1/Lw.d18O.int.sd^2) T(-15,5)
+  Lw.d18O.int ~ dnorm(Lw.d18O.int.mean, 1/Lw.d18O.int.sd^2) #T(-10,5)
   
   Lw.d18O.int.mean = -5
   
-  Lw.d18O.int.sd = 4
+  Lw.d18O.int.sd = 3
   
   #####Runoff isotopes time series####
   #runoff ratio from delta values
@@ -367,40 +425,42 @@ model {
   
   rRo.18O[1:t] = (Ro.d18O[1:t] * 1e-3) + 1 #runoff 18O ratio from delta value
   
-  for (i in 2:t){
-    #runoff d18O and d2H are correlated and evolve along MWL
+  for (i in 1:t){
+    #runoff d18O and d2H are correlated and evolve along MWL, but not a time series
     Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
-    
-    Ro.d18O[i] = Ro.d18O[i - 1] + Ro.d18O.cps[i]
-    
-    Ro.d18O.cps[i] ~ dnorm(Ro.d18O.cps[i - 1] * Ro.cps.ac, Ro.d18O.pre)
-    
+
+    Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-10)
+      
   }
-  Ro.d18O.cps[1] ~ dnorm(0, Ro.d18O.pre) #centered around 0, allowed some variation
   
-  Ro.cps.ac ~ dunif(0, 0.8)
-  
-  Ro.d18O.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate) # ~0.5 per mil error/10 years
-  Ro.d18O.pre.shp = 16
-  Ro.d18O.pre.rate = 4
-  
-  #calculate Ro.d2H using d18O
-  Ro.d2H[1] = Ro.d18O[1]*Ro.slope.m + Ro.intc.m
-  
+  # for (i in 2:t){
+  #   #runoff d18O and d2H are correlated and evolve along MWL
+  #   Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
+  #   
+  #   Ro.d18O[i] = Ro.d18O[i - 1] + Ro.d18O.cps[i]
+  #   
+  #   Ro.d18O.cps[i] ~ dnorm(Ro.d18O.cps[i - 1] * Ro.cps.ac, Ro.d18O.pre)
+  #   
+  # }
+  # Ro.d18O.cps[1] ~ dnorm(0, Ro.d18O.pre) #centered around 0, allowed some variation
+  # 
+  # Ro.cps.ac ~ dunif(0.01, 0.8) #should runoff d18O be autocorrelated?
+  # 
+  # Ro.d18O.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate) # ~0.25 per mil error/100 years
+  # Ro.d18O.pre.shp = 16
+  # Ro.d18O.pre.rate = 4
+  # 
+  # #calculate Ro.d2H using d18O
+  # Ro.d2H[1] = Ro.d18O[1]*Ro.slope.m + Ro.intc.m
+  # 
   #parameters are from *model input*
-  Ro.intc.m ~ dnorm(MWL.intc, 1 / 1 ^ 2) 
-  
-  Ro.slope.m ~ dnorm(MWL.slope, 1 / 0.1 ^ 2) 
-  
-  #Runoff initial value, uninformative prior
-  Ro.d18O[1] ~ dnorm(Ro.d18O.int, 1/0.2^2) #allowed some variation
-  
-  #an initial value that centers around modern estimates, but uninformative
-  Ro.d18O.int ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-20,-12)
-  
   Ro.d18O.int.mean = -17
+
+  Ro.d18O.int.sd = 3
   
-  Ro.d18O.int.sd = 2
+  Ro.intc.m ~ dnorm(MWL.intc, 1 / 1 ^ 2)
+  
+  Ro.slope.m ~ dnorm(MWL.slope, 1 / 0.1 ^ 2)
   
   #lake area, use bathymetric table
   LA.P[1] = interp.lin(LV.P[1], GSL.volume, GSL.area)
@@ -415,10 +475,10 @@ model {
     
   }
   
-  Runoff.int.mean ~ dnorm(3.5,1/0.5^2)
+  Runoff.int.mean ~ dnorm(3.5,1/1^2)
   
   Runoff.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate)
-  Runoff.pre.shp = 100
+  Runoff.pre.shp = 200
   Runoff.pre.rate = 2
   
   #####LST time series####
@@ -430,7 +490,7 @@ model {
     
     LST[i] = LST[i - 1] + LST.cps[i]
     
-    LST.cps[i] ~ dnorm(LST.cps[i - 1] * LST.cps.ac, LST.pre)
+    LST.cps[i] ~ dnorm(LST.cps[i - 1] * LST.cps.ac, LST.pre) T(-1,1)
     
   }
   LST.cps[1] ~ dnorm(0, LST.pre) #allowed some variation
@@ -445,11 +505,11 @@ model {
   LST.k[1] = 273.15 + LST[1]
   LST[1] ~ dnorm(LST.int, LST.pre) #allowed some variation
   
-  #an uninformative initial value: 20+-5 degrees C with a warm season bias, Steenburgh et al 2000
-  LST.int ~ dnorm(20, 1/5^2) T(10, 30)  
+  #an uninformative initial value: 20+-2 degrees C with a warm season bias, Steenburgh et al 2000
+  LST.int ~ dnorm(20, 1/2^2) T(16, 24)  
   
-  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.15 degrees error/10 years
-  LST.pre.shp = 100
+  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.25 degrees error/100 years
+  LST.pre.shp = 50
   LST.pre.rate = 2
   
   #####starting values####
@@ -457,8 +517,11 @@ model {
   nsws ~ dnorm(nsws.mean, 1/0.5^2) #allow some variation
   nsws.mean ~ dnorm(5.8, 1/0.2^2) #wind speed data from Steenburgh, 2000
   
-  rh ~ dnorm(rh.mean, 1/0.02^2) #allow some variation
-  rh.mean ~ dnorm(0.35, 1/0.05^2) #~0.35 +- 0.05 rh
+  #relative humidity ~0.35 +- 0.05
+  rh ~ dbeta(40, 72) T(0.2,0.5)
+  # 
+  # rh ~ dnorm(rh.mean, 1/0.02^2) #allow some variation
+  # rh.mean ~ dnorm(0.35, 1/0.05^2) #~0.35 +- 0.05 rh
   
   #lake starting level: 1280 +-1 meters
   L.level.int ~ dnorm(1280,1/1^2) T(1275,1286)#m

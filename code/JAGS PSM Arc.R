@@ -96,7 +96,7 @@ model {
   
   age.cyst.d = post.age.cyst[ind.dep,]
   
-  ind.dep ~ dcat(n.bac.it)
+  ind.dep ~ dcat(rep(1, n.bac.it))
 
   
   #sampling rbacon posterior and use it for Age-depth model
@@ -143,7 +143,7 @@ model {
     # rlcwax2H[i] = rRo.2H[i]*(1 + epsilon2H.lcwax/1e3) #this is a fixed epsilon relationship
 
     #lake carbonate d18O (VPDB) from lake water d18O (VSMOW)
-    d18O.car[i] = Lw.d18O[i] - 0.27 + 25.8 - sqrt(25.8^2 - 11.1*(16.1 - LST[i])) #Dee et al. 2018
+    d18O.car[i] = Lw.d18O[i] - 0.27 + 25.8 - sqrt(25.8*25.8 - 11.1*(16.1 - LST[i])) #Dee et al. 2018
 
   }
   #Brine shrimp cyst slopes and intercepts, Nielson and Bowen 2010
@@ -196,13 +196,15 @@ model {
   lcwax.d2H.inc ~ dnorm(-129, 1/15^2)
   lcwax.d2H.slope ~ dnorm(0.78, 1/0.01^2)
   
-  # #use the equation in McFarlin et al 2019, with slope and intercept
+  # #use the equation in McFarlin et al 2019, with slope and intercept for n-acid
   # lcwax.d2H.inc ~ dnorm(-125, 1/20^2)
   # lcwax.d2H.slope ~ dnorm(0.62, 1/0.01^2)
   
   #Assuming a gap between MAP d2H and runoff, as a prescribed covariance
   d2H.gap.MAP_Ro ~ dnorm(d2H.gap.MAP_Ro.mean, 1/1^2) #allow some variation
   d2H.gap.MAP_Ro.mean ~ dnorm(45,1/2^2) #gap mean = 45 +-2, informed by modern value
+  
+  #or model soil evaporation?
   
   #get mid-chain alkanes epsilon and water mixture.
   
@@ -384,7 +386,7 @@ model {
   
   Ro.cps.ac ~ dunif(0.01, 0.8) #should runoff d18O be autocorrelated?
   
-  Ro.d18O.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate) # ~0.25 per mil error/10 years
+  Ro.d18O.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate) # ~0.25 per mil error/100 years
   Ro.d18O.pre.shp = 64
   Ro.d18O.pre.rate = 4
   
@@ -422,7 +424,7 @@ model {
   Runoff.int.mean ~ dnorm(3.5,1/0.5^2)
   
   Runoff.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate)
-  Runoff.pre.shp = 50
+  Runoff.pre.shp = 80
   Runoff.pre.rate = 2
   
   #####LST time series####
@@ -434,7 +436,7 @@ model {
     
     LST[i] = LST[i - 1] + LST.cps[i]
     
-    LST.cps[i] ~ dnorm(LST.cps[i - 1] * LST.cps.ac, LST.pre)
+    LST.cps[i] ~ dnorm(LST.cps[i - 1] * LST.cps.ac, LST.pre) T(-1,1)
     
   }
   LST.cps[1] ~ dnorm(0, LST.pre) #allowed some variation
@@ -449,11 +451,11 @@ model {
   LST.k[1] = 273.15 + LST[1]
   LST[1] ~ dnorm(LST.int, LST.pre) #allowed some variation
   
-  #an uninformative initial value: 20+-5 degrees C with a warm season bias, Steenburgh et al 2000
-  LST.int ~ dnorm(20, 1/5^2) T(10, 30)  
+  #an uninformative initial value: 20+-2 degrees C with a warm season bias, Steenburgh et al 2000
+  LST.int ~ dnorm(20, 1/2^2) T(15, 25)  
   
-  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.15 degrees error/10 years
-  LST.pre.shp = 50
+  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.15 degrees error/100 years
+  LST.pre.shp = 100
   LST.pre.rate = 2
   
   #####starting values####
