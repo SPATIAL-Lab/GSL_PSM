@@ -45,7 +45,7 @@ sub.GSL <- subset(GSL.volume.1286,abs(SL.GSL/GSL.volume.1286)<355)
 #salinity curve
 GSL.sali <- c(rep(355,length(GSL.volume.1286)-length(sub.GSL)),SL.GSL/sub.GSL)
 
-GSL.sali.sg <- 0.99907 + GSL.sali/1000 #calculate specific gravity at 15.56 celcius
+# GSL.sali.sg <- 0.99907 + GSL.sali/1000 #calculate specific gravity at 15.56 celcius
 
 plot(GSL.level.1286,GSL.sali,type = "l", ylim=c(0,350),ylab="Salinity, g/L")
 #check historic salinity measurement: in 1949, Lake level at 1279.1 m. Salinity at ~270 g/L
