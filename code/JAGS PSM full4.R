@@ -196,21 +196,21 @@ model {
   BScyst.inc.18O ~ dnorm(15.9, 1/0.31^2)
   
   #carbohydrate 2H fractionation for Brine Shrimp diet (algae), Estep and Hoering 1980 
-  epsilon.2H.carbohy ~ dnorm(-100, 1/15^2)
+  epsilon.2H.carbohy ~ dnorm(-100, 1/15^2) 
   
   #carbohydrate 18O fractionation for Brine Shrimp diet (algae), DeNiro and Epstine 1981 
   epsilon.18O.carbohy ~ dnorm(27, 1/5^2)
   
   #simple version: use linear relationship by sachse and sachs 2008, but it does not apply to high salinity
-  scwax.alpha.sl = 0.0008
-  
-  scwax.alpha.inc = 0.80745
-  
-  scwax.alpha.inc.err ~ dnorm(0, 1/0.005^2) #~+- 5 permil error
-  
-  # scwax.alpha.sl ~ dnorm(0.00080, 1/0.0001^2) T (0.0006,0.001)
+  # scwax.alpha.sl = 0.0008
   # 
-  # scwax.alpha.inc ~ dnorm(0.80745, 1/0.05^2) T (0.79,0.83)
+  # scwax.alpha.inc = 0.80745
+  # 
+  # scwax.alpha.inc.err ~ dnorm(0, 1/0.005^2) #~+- 5 permil error
+  
+  scwax.alpha.sl ~ dnorm(0.00080, 1/0.00005^2) T (0.0007,0.0009)
+
+  scwax.alpha.inc ~ dnorm(0.80745, 1/0.005^2) T (0.79,0.83)
   
   #more complicated version: use regression 
   #use posterior of the short chain wax calibration in the calculation 
@@ -234,7 +234,7 @@ model {
   
   #Assuming a gap between MAP d2H and runoff, as a prescribed covariance
   d2H.gap.MAP_Ro ~ dnorm(d2H.gap.MAP_Ro.mean, 1/1^2) #allow some variation
-  d2H.gap.MAP_Ro.mean ~ dnorm(45,1/5^2) #gap mean = 45 +-5, informed by modern value
+  d2H.gap.MAP_Ro.mean ~ dnorm(50,1/5^2) #gap mean = 50 +-5, informed by modern value
   
   #get mid-chain alkanes epsilon and water mixture.
   #proximal lake water mixing
@@ -328,7 +328,8 @@ model {
   Evap[1] = E.rate[1]*LA[1]/1000
   
   #Finch and Calver 2008 #acceptible rates with a warm season bias
-  E.rate[1] =  2.909* nsws * (LA[1]*1e6)^-0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 183*1000
+  #lake evaporation is happening primarily between April and October, 7 months
+  E.rate[1] =  2.909* nsws * (LA[1]*1e6)^-0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 210*1000
   #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
   
   #fresh water saturation vapor pressure Teten's eq in kPa
@@ -426,7 +427,7 @@ model {
     #runoff d18O and d2H are correlated and evolve along MWL, but not a time series
     Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
 
-    Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-10)
+    Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-9)
       
   }
   
@@ -472,7 +473,7 @@ model {
   AT[1] = LST[1] + T.gap
   #temperature gap is modeled as stochastic
   T.gap ~ dnorm(T.gap.mean, 1/0.5^2) # allow some variation
-  T.gap.mean ~ dnorm(10, 1/1^2)
+  T.gap.mean ~ dnorm(8, 1/1^2)
   # initiate the series with an reasonable prior
   LST.k[1] = 273.15 + LST[1]
   LST[1] ~ dnorm(LST.int, LST.pre) #allowed some variation
