@@ -97,7 +97,7 @@ model {
   #very little carbon dead lc alkanes
   f.C14d.lcwax ~ dbeta(2,100) #~0.5% dead material
   
-  d2H.C14d.lcwax ~ dnorm(-150,1/30^2)#mesozoic lc wax is !-150 per mil, sd = 30!!!!!!!!!!!!!!!!!!!!!!!!!
+  d2H.C14d.lcwax ~ dnorm(-150,1/15^2)#mesozoic lc wax is !-150 per mil, sd = 15!!!!!!!!!!!!!!!!!!!!!!!!!
   
   #get weighted averaged carbonate d18O
   for (i in 1:(t - t.avg)){
@@ -273,7 +273,10 @@ model {
     #lake evaporation amount, km3
     Evap[i] = E.rate[i] * LA[i]/1000
     
-    E.rate[i] =  2.909* nsws * (LA[i]*1e6)^-0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 183*1000
+    # E.rate[i] =  2.909* nsws * (LA[i]*1e6)^-0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 210*1000
+    
+    #McMillan 1973 for wind function
+    E.rate[i1] =  (3.6 + 2.5 * nsws) * (5/LA[i])^0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 150*1000
     #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
     
     #fresh water saturation vapor pressure Teten's eq in kPa
@@ -328,8 +331,11 @@ model {
   Evap[1] = E.rate[1]*LA[1]/1000
   
   #Finch and Calver 2008 #acceptible rates with a warm season bias
-  #lake evaporation is happening primarily between April and October, 7 months
-  E.rate[1] =  2.909* nsws * (LA[1]*1e6)^-0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 210*1000
+  #lake evaporation is happening primarily between May and September, 5 months
+  # E.rate[1] =  2.909* nsws * (LA[1]*1e6)^-0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 210*1000
+  
+  E.rate[1] =  (3.6 + 2.5 * nsws) * (5/LA[1])^0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 150*1000
+  
   #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
   
   #fresh water saturation vapor pressure Teten's eq in kPa
@@ -481,13 +487,13 @@ model {
   #an uninformative initial value: 20+-5 degrees C with a warm season bias, Steenburgh et al 2000
   LST.int ~ dunif(15, 25)  
   
-  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.25 degrees error/100 years
+  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.75 degrees error/100 years
   LST.pre.shp = 50
   LST.pre.rate = 2
   
   #####starting values####
   
-  nsws ~ dnorm(nsws.mean, 1/0.5^2) #allow some variation
+  nsws ~ dnorm(nsws.mean, 1/0.5^2) T(4,7)#allow some variation
   nsws.mean ~ dnorm(5.8, 1/0.2^2) #wind speed data from Steenburgh, 2000
   
   #relative humidity ~0.35 +- 0.05

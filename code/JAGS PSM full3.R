@@ -17,11 +17,11 @@ model {
   }
   
   #evaluation, use scwax and lcwax bins
-  # for (i in 1:n.sc.wax){
-  #   #short chain wax
-  #   scwax.d2H.dat[i] ~ dnorm(scwax.d2H[scwax.bins[i]], 1/scwax.d2H.sd[i]^2)
-  #   
-  # }
+  for (i in 1:n.sc.wax){
+    #short chain wax
+    scwax.d2H.dat[i] ~ dnorm(scwax.d2H[scwax.bins[i]], 1/scwax.d2H.sd[i]^2)
+
+  }
   
   for (i in 1:n.lc.wax){
     #long chain wax
@@ -40,7 +40,7 @@ model {
   
   lcwax.bins = t - trunc(age.lc.d/age.res)
   
-  # scwax.bins = t - trunc(age.sc.d/age.res)
+  scwax.bins = t - trunc(age.sc.d/age.res)
   
   age.lc.d = post.age.lcwax[ind.dep,]
   
@@ -67,6 +67,8 @@ model {
   for (i in t.avg:t ){
     lcwax.d2H.dc[i] = sum(lcwax.d2H[(i - t.avg+1):i] * w.avg.lcwax)*(1 - f.C14d.lcwax) + f.C14d.lcwax* d2H.C14d.lcwax
   }
+  
+  d2H.C14d.lcwax ~ dnorm(-150,1/15^2)#mesozoic lc wax is !-150 per mil, sd = 30!!!!!!!!!!!!!!!!!!!!!!!!!
   
   #evaluate lc wax 14C offset
   # lcwax.offset ~ dnorm(lcwax.offset.m, 1/200^2) #uncertainty of 200 years for long chain wax 
@@ -96,9 +98,7 @@ model {
   
   #very little carbon dead lc alkanes
   f.C14d.lcwax ~ dbeta(2,100) #~2% dead material
-  
-  d2H.C14d.lcwax ~ dnorm(-150,1/30^2)#mesozoic lc wax is !-150 per mil, sd = 30!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   #get weighted averaged carbonate d18O
   # for (i in 1:(t - t.avg)){
   #   carb.d18O.dc[i] = sum(carb.d18O[i:(i + t.avg - 1)] * w.avg.carb)*(1 - f.C14d.carb) + d18O.C14d.carb * f.C14d.carb 
@@ -107,6 +107,7 @@ model {
   for (i in t.avg:t ){
     carb.d18O.dc[i] = sum(carb.d18O[(i - t.avg+1):i] * w.avg.carb)*(1 - f.C14d.carb) + d18O.C14d.carb * f.C14d.carb
   }
+  d18O.C14d.carb ~ dnorm(-5,1/1^2)#lake carbonate has d18O near -5 per mil, sd = 1!!!!!!!!!!!!!!!!!!!!!!!!!
   
   #evaluate carbonate 14C offset
   # carb.offset ~ dnorm(carb.offset.m, 1/200^2) #uncertainty of 200 years for carbonates 
@@ -136,16 +137,17 @@ model {
   stor.par.carb ~ dbeta(5,10) #1/stor.par ~0.3, shorter storage for carbonates
   
   f.C14d.carb ~ dbeta(10,200) #~5% carbon dead material
-  
-  d18O.C14d.carb ~ dnorm(-5,1/3^2)#lake carbonate has d18O near -5 per mil, sd = 3!!!!!!!!!!!!!!!!!!!!!!!!!
 
   ###SEN MODEL###
+  #convert vsmow to vpdb
+  carb.d18O = 0.97001 * carb.d18O.vsmow - 29.99
+  
   for (i in 1:t){
     #BS cysts
     BScyst.d2H[i] = BScyst.slope.lw.2H * Lw.d2H[i] + BScyst.slope.diet.2H * BSdiet.d2H[i] + BScyst.inc.2H
-
+    
     BScyst.d18O[i] = BScyst.slope.lw.18O * Lw.d18O[i] + BScyst.slope.diet.18O * BSdiet.d18O[i] + BScyst.inc.18O
-
+    
     # BScyst.d2H[i] = 0.34 * Lw.d2H[i] + 0.26 * BSdiet.d2H[i] -92
     # 
     # BScyst.d18O[i] = 0.692 * Lw.d18O[i] + 0.101 * BSdiet.d18O[i] + 15.9
@@ -156,44 +158,35 @@ model {
     BSdiet.d18O[i] = (rBSdiet.18O[i]-1) * 1e3
     
     #model algal cellulose d2H and d18O 
-    rBSdiet.2H[i] = rlw2H.A[i] * (epsilon.2H.carbohy/1000 + 1)
+    rBSdiet.2H[i] = rprx.L.2H[i] * (epsilon.2H.carbohy/1000 + 1)
     
-    rBSdiet.18O[i] = rlw18O.A[i] * (epsilon.18O.carbohy/1000 + 1)
+    rBSdiet.18O[i] = rprx.L.18O[i] * (epsilon.18O.carbohy/1000 + 1)
     
     #short chain wax from proximal lake water, convert ratio to delta 2H
-    # scwax.d2H[i] = (rscwax.2H[i]-1) * 1e3
-    # 
-    # #short chain wax as a mixture between proximal lake water and lake center
-    # # rscwax.2H[i] = rprx.L.2H[i] * alpha2H.sc.alkane[i]
-    # 
-    # rscwax.2H[i] = rwax.gr.2H[i] * f.cyan + rwax.gr.2H[i] * (1 - f.cyan)
-    # 
-    # #green algae from lake water, use salinity correction
-    # rwax.gr.2H[i] = rlw2H.A[i] * alpha2H.gr.alkane[i]
-    # 
-    # #cyanobacteria from proximal lake water, use salinity correction
-    # rwax.cyan.2H[i] = rprx.L.2H[i] * alpha2H.cyan.alkane[i]
-    # 
-    # #short chain wax n-C17 epsilon scale with salinity, Sachse and Sachs
-    # #Here try to use alpha for better consistency, and alpha cannot be larger than 1
-    # alpha2H.gr.alkane[i] = ifelse(prx.sal[i] * scwax.alpha.sl + scwax.alpha.inc > 1,1, sal.A[i] * scwax.alpha.sl + scwax.alpha.inc)
-    # 
-    # alpha2H.cyan.alkane[i] = ifelse(prx.sal[i] * scwax.alpha.sl + scwax.alpha.inc > 1,1, prx.sal[i] * scwax.alpha.sl + scwax.alpha.inc)
-
+    scwax.d2H[i] = (rscwax.2H[i]-1) * 1e3
+    
+    #short chain wax from proximal lake water
+    rscwax.2H[i] = rprx.L.2H[i] * alpha2H.sc.alkane[i]
+    
+    
+    #short chain wax n-C17 epsilon scale with salinity, Sachse and Sachs
+    #Here try to use alpha for better consistency, and alpha cannot be larger than 1
+    alpha2H.sc.alkane[i] = ifelse(prx.sal[i] * scwax.alpha.sl + scwax.alpha.inc > 1,1, prx.sal[i] * scwax.alpha.sl + scwax.alpha.inc)
+    
     #long chain wax 
     #use the equation in McFarlin et al 2019, with slope and intercept
     lcwax.d2H[i] = lcwax.d2H.slope * d2H.MAP[i] + lcwax.d2H.inc
-
-    #assuming local wax sources using runoff ratio
-    d2H.MAP[i] = Ro.d2H[i] + d2H.gap.MAP_Ro
     
-    # lcwax.d2H[i] = (rlcwax2H[i]- 1) * 1e3 
-    # rlcwax2H[i] = rRo.2H[i]*(1 + epsilon2H.lcwax/1e3) #this is a fixed epsilon relationship
+    d2H.MAP[i] = Ro.d2H[i] + d2H.gap.MAP_Ro
 
     #lake carbonate d18O (VPDB) from lake water d18O (VSMOW)
-    carb.d18O[i] = Lw.d18O[i] - 0.27 + 25.8 - sqrt(25.8*25.8 - 11.1*(16.1 - LST[i])) #Dee et al. 2018
+    carb.d18O.vsmow[i] = Lw.d18O[i] + 17.88 * (1000/LST.k[i]) - 31.14#this is vsmow!
 
   }
+
+  # alpha.arag.intc ~ dnorm(31.14, 1/0.46^2) #Kim et al 2007 
+  # alpha.arag.slope ~ dnorm(17.88, 1/0.13^2)
+  
   #Brine shrimp cyst slopes and intercepts, Nielson and Bowen 2010
   BScyst.slope.lw.2H ~ dnorm(0.34, 1/0.019^2)
 
@@ -214,9 +207,9 @@ model {
   epsilon.18O.carbohy ~ dnorm(27, 1/5^2)
   
   #simple version: use linear relationship by sachse and sachs 2008, but it does not apply to high salinity
-  # scwax.alpha.sl ~ dnorm(0.00080, 1/0.0001^2) T (0.0002,0.0015)
-  # 
-  # scwax.alpha.inc ~ dnorm(0.80745, 1/0.05^2) T (0.79,0.83)
+  scwax.alpha.sl ~ dnorm(0.00080, 1/0.00005^2) T (0.0007,0.0009)
+  
+  scwax.alpha.inc ~ dnorm(0.80745, 1/0.005^2) T (0.79,0.83)
   
   #more complicated version: use regression 
   #use posterior of the short chain wax calibration in the calculation 
@@ -244,138 +237,142 @@ model {
   
   #Assuming a gap between MAP d2H and runoff, as a prescribed covariance
   d2H.gap.MAP_Ro ~ dnorm(d2H.gap.MAP_Ro.mean, 1/1^2) #allow some variation
-  d2H.gap.MAP_Ro.mean ~ dnorm(45,1/5^2) #gap mean = 50 +-5, informed by modern value
+  d2H.gap.MAP_Ro.mean ~ dnorm(50,1/5^2) #gap mean = 50 +-5, informed by modern value
   
   #get mid-chain alkanes epsilon and water mixture.
   #proximal lake water mixing
   #mixing with runoff
   
-  # #proximal lake salinity
-  # prx.sal = sal.A * prx.L.v/(prx.L.v + Runoff) #diluted by runoff
-  # 
-  # #convert back to delta values
-  # prx.L.d2H = (rprx.L.2H - 1) * 1e3
-  # 
-  # prx.L.d18O = (rprx.L.18O- 1) * 1e3
-  # 
-  # rprx.L.2H = (prx.L.v * rlw2H.A + Runoff * rRo.2H)/(prx.L.v + Runoff)
-  # 
-  # rprx.L.18O = (prx.L.v * rlw18O.A + Runoff * rRo.18O)/(prx.L.v + Runoff)
-  # 
-  # prx.L.v = LV.A * f.m.ro
-  # #fraction of lake water that is mixed with runoff, let the model explore
-  # f.m.ro ~ dbeta(1,1)
+  #proximal lake salinity
+  prx.sal = sal * prx.L.v/(prx.L.v + Runoff) #diluted by runoff
+  
+  #convert back to delta values
+  prx.L.d2H = (rprx.L.2H - 1) * 1e3
+  
+  prx.L.d18O = (rprx.L.18O- 1) * 1e3
+  
+  rprx.L.2H = (prx.L.v * rlw2H + Runoff * rRo.2H)/(prx.L.v + Runoff)
+  
+  rprx.L.18O = (prx.L.v * rlw18O + Runoff * rRo.18O)/(prx.L.v + Runoff)
+  
+  prx.L.v = LV * f.m.ro
+  #fraction of lake water that is mixed with runoff, let the model explore
+  f.m.ro ~ dbeta(30,80)
   
   ###EVN MODEL###
   #results: lake water d18O, d2H, salinity
   
   #evaporation choices? T, wind speed, albeno, and Rs: radiation?????????????????????????????????????????????
   #penman's equation (energy-balance equation), simplified by Valiantzas 2006 eq 32
-
+  
+  #convert back to delta values
+  Lw.d2H = (rlw2H - 1) * 1e3 
+  Lw.d18O = (rlw18O - 1) * 1e3 
+  
+  evap.d2H = 1e3 *(re2H - 1)
+  evap.d18O = 1e3 *(re18O - 1)
+  
   for (i in 2:t){
-    #convert back to delta values
-    Lw.d2H[i] = (rlw2H.A[i] - 1) * 1e3 
-    Lw.d18O[i] = (rlw18O.A[i] - 1) * 1e3 
-    
-    #Lake water isotope mass balance for after evaporation
-    rlw18O.A[i] = ( LV.P[i] * rlw18O.P[i] - Evap[i] * re18O[i] )/LV.A[i]
-    
-    rlw2H.A[i] = ( LV.P[i] * rlw2H.P[i] - Evap[i] * re2H[i])/LV.A[i]
-    
     #lake evaporation amount, km3
-    Evap[i] = E.rate[i] * LA.P[i]/1000
+    Evap[i] = E.rate[i] * LA[i]/1000
     
-    sal.A[i] = interp.lin(L.level[i], GSL.level, GSL.sali)
+    # E.rate[i] =  2.909* nsws * (LA[i]*1e6)^-0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 210*1000
     
-    L.level[i] = interp.lin(LV.A[i], GSL.volume, GSL.level)
-    
-    LV.A[i] = LV.P[i] - Evap[i] #LV.A is the real lake volume at the end of the seasonal cycle
-    
-    E.rate[i] =  2.909* nsws * (LA.P[i]*1e6)^-0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 183*1000
+    #McMillan 1973 for wind function
+    E.rate[i] =  (3.6 + 2.5 * nsws) * (5/LA[i])^0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 150*1000
     #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
     
     #fresh water saturation vapor pressure Teten's eq in kPa
     Vpfs[i] = 0.61078 * exp(17.269 * AT[i]/(237.3 + AT[i])) #saturated vapor pressure
     
-    evap.d2H[i] = 1e3 *(re2H[i] - 1)
-    evap.d18O[i] = 1e3 *(re18O[i] - 1)
-    
     #evaporated water fractionation, ratio for water vapor in boundary layer air
-    re2H[i] = (rlw2H.P[i]/Alpha.2H[i]-rh*f*ra2H) / (((1-rh)/alphak.2H) + (rh*(1-f))) #Dee 2015
+    re2H[i] = (rlw2H[i]/Alpha.2H[i]-rh*f*ra2H) / (((1-rh)/alphak.2H) + (rh*(1-f))) #Dee 2015
     
-    re18O[i] = (rlw18O.P[i]/Alpha.18O[i]-rh*f*ra18O) / (((1-rh)/alphak.18O) + (rh*(1-f))) #Dee 2015
+    re18O[i] = (rlw18O[i]/Alpha.18O[i]-rh*f*ra18O) / (((1-rh)/alphak.18O) + (rh*(1-f))) #Dee 2015
     
     #equilibrium fractionations >1, temperature dependent, range : 0 to 100 degrees C
     Alpha.2H[i] = exp(24844/(LST.k[i]^2)- 76.248/LST.k[i] + 0.05261) * H.frac.coef[i] #Majoube 1971 + salt correction
     
     Alpha.18O[i] = exp(1137/(LST.k[i]^2)- 0.4156/LST.k[i] - 0.00207) * O.frac.coef[i] #Majoube 1971 + salt correction
     
-    H.frac.coef[i] = 1- sal.corr.d2H/1000*(sal.P[i]/sal.mol.ms)
+    H.frac.coef[i] = 1- sal.corr.d2H/1000*(sal[i]/sal.mol.ms)
     
-    O.frac.coef[i] = 1- sal.corr.d18O/1000*(sal.P[i]/sal.mol.ms)
+    O.frac.coef[i] = 1- sal.corr.d18O/1000*(sal[i]/sal.mol.ms)
     
     #saline water vapor pressure coefficient using a combination of data
-    S.coeff[i] = 1-9.098e-07*sal.P[i]^2.267
+    S.coeff[i] = 1-9.098e-07*sal[i]^2.267
     
     #use salinity table to interpolate salinity, *GSL.volume and GSL.sali are inputs*
-    sal.P[i] = interp.lin(LV.P[i], GSL.volume, GSL.sali)
-    
-    #calculate mixed lake and runoff ratio before evaporation
-    rlw2H.P[i] = (rlw2H.A[i - 1] * LV.A[i - 1]  + rRo.2H[i] * Runoff[i])/LV.P[i]
-    
-    rlw18O.P[i] = (rlw18O.A[i - 1] * LV.A[i - 1]  + rRo.18O[i] * Runoff[i])/LV.P[i]
+    sal[i] = interp.lin(LV[i], GSL.volume, GSL.sali)
     
     #lake area, use bathymetric table
-    LA.P[i] = interp.lin(LV.P[i], GSL.volume, GSL.area)
-    #lake volume, use bathymetric table
-    LV.P[i] = interp.lin(L.level[i-1], GSL.level, GSL.volume) + Runoff[i]
+    LA[i] = interp.lin(LV[i], GSL.volume, GSL.area)
+    
+    L.level[i] = interp.lin(LV[i], GSL.volume, GSL.level)
+    
+    # #Lake water isotope mass balance
+    rlw2H[i] = (rlw2H[i - 1] * LV[i - 1]  + rRo.2H[i - 1] * Runoff[i - 1] - Evap[i - 1] * re2H[i - 1])/LV[i]
+    
+    rlw18O[i] = (rlw18O[i - 1] * LV[i - 1]  + rRo.18O[i - 1] * Runoff[i - 1] - Evap[i - 1] * re18O[i - 1])/LV[i]
+    
+    #Lake water isotope mass balance
+    # rlw2H[i] = (rlw2H[i - 1] * LV[i - 1]  - rRo.2H[i - 1] * Runoff[i - 1] + Evap[i - 1] * re2H[i - 1])/LV[i]
+    # 
+    # rlw18O[i] = (rlw18O[i - 1] * LV[i - 1]  - rRo.18O[i - 1] * Runoff[i - 1] + Evap[i - 1] * re18O[i - 1])/LV[i]
+    
+    # #lake volume, use bathymetric table
+    LV[i] = LV[i - 1] + Runoff[i - 1] - Evap[i - 1]
+    
+    #devolving lake volume LV[i]
+    # LV[i] = LV[i - 1] - Runoff[i - 1] + Evap[i - 1]
     
   }
   
   #define t = 1 for priming of the parameters
   #lake water isotope ratios after evaporation
-  rlw18O.A[1] = ( LV.P[1] * rlw18O.P[1] - Evap[1] * re18O[1] )/LV.A[1]
   
-  rlw2H.A[1] = ( LV.P[1] * rlw2H.P[1] - Evap[1] * re2H[1])/LV.A[1]
-  
-  L.level[1] = interp.lin(LV.A[1], GSL.volume, GSL.level)
-  
-  LV.A[1] = LV.P[1] - Evap[1] #LV.A is the real lake volume at the end of the seasonal cycle
-  
-  Evap[1] = E.rate[1]*LA.P[1]/1000
+  Evap[1] = E.rate[1]*LA[1]/1000
   
   #Finch and Calver 2008 #acceptible rates with a warm season bias
-  E.rate[1] =  2.909* nsws * (LA.P[1]*1e6)^-0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 183*1000
+  #lake evaporation is happening primarily between April and October, 7 months
+  # E.rate[1] =  2.909* nsws * (LA[1]*1e6)^-0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 210*1000
+  
+  E.rate[1] =  (3.6 + 2.5 * nsws) * (5/LA[1])^0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 150*1000
+  
   #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
   
   #fresh water saturation vapor pressure Teten's eq in kPa
   Vpfs[1] = 0.61078 * exp(17.269 * AT[1]/(237.3 + AT[1])) #saturated vapor pressure
   
   #####LST-dependent evaporation isotope calculations####
-  evap.d2H[1] = 1e3 *(re2H[1] - 1)
-  evap.d18O[1] = 1e3 *(re18O[1] - 1)
   
-  #alphas need further correction for salinity (Gibson 2016, Koehler 2013)
-  re2H[1] = (rlw2H.P[1]/Alpha.2H[1]-rh*f*ra2H) / (((1-rh)/alphak.2H) + (rh * (1 - f))) #Dee 2015
+  
+  re2H[1] = (rlw2H[1]/Alpha.2H[1]-rh*f*ra2H) / (((1-rh)/alphak.2H) + (rh * (1 - f))) #Dee 2015
   
   #re18O is the 18O ratio for water vapor in boundary layer air
-  re18O[1] = (rlw18O.P[1]/Alpha.18O[1]-rh*f*ra18O) / (((1-rh)/alphak.18O) + (rh * (1 - f))) #Dee 2015
+  re18O[1] = (rlw18O[1]/Alpha.18O[1]-rh*f*ra18O) / (((1-rh)/alphak.18O) + (rh * (1 - f))) #Dee 2015
   
-  #equilibrium fractionations >1, temperature dependent; Majoube, 1971
+  #equilibrium fractionations >1, temperature dependent; Majoube, 1971, correction for salinity (Gibson 2016, Koehler 2013)
   Alpha.2H[1] = exp(24844/(LST.k[1]^2)- 76.248/LST.k[1] + 0.05261) * H.frac.coef[1]
   
   Alpha.18O[1] = exp(1137/(LST.k[1]^2)- 0.4156/LST.k[1] - 0.00207) * O.frac.coef[1]
   
+  H.frac.coef[1] = 1- sal.corr.d2H/1000*(sal[1]/sal.mol.ms)
   
-  H.frac.coef[1] = 1- sal.corr.d2H/1000*(sal.P[1]/sal.mol.ms)
+  O.frac.coef[1] = 1- sal.corr.d18O/1000*(sal[1]/sal.mol.ms)
   
-  O.frac.coef[1] = 1- sal.corr.d18O/1000*(sal.P[1]/sal.mol.ms)
+  S.coeff[1] = 1-9.098e-07*sal[1]^2.267 #salinity vapor pressure coefficent for evaporation
   
-  S.coeff[1] = 1-9.098e-07*sal.P[1]^2.267 #salinity vapor pressure coefficent for evaporation
+  sal[1] = interp.lin(L.level[1], GSL.level, GSL.sali)
   
-  sal.P[1] = interp.lin(L.level.int, GSL.level, GSL.sali)
+  LA[1] = interp.lin(L.level[1], GSL.level, GSL.area)
   
-  sal.A[1] = interp.lin(L.level.int, GSL.level, GSL.sali)
+  LV[1] = interp.lin(L.level[1], GSL.level, GSL.volume) #LV.A is the real lake volume at the end of the seasonal cycle
+  
+  # lake starting level: 1280 +-3 meters
+  # L.level[1] ~ dnorm(1280,1/3^2) T(1276,1284)#m
+  
+  L.level[1] ~ dunif(1276,1284)#m
   
   #####Water vapor isotopes initial values#####
   
@@ -408,85 +405,59 @@ model {
   
   #####Lake water isotopes initial values#####
   ##convert to lake water ratios
-  rlw2H.P[1] = (Lw.d2H[1]*1e-03) + 1 #convert to water vapor 2H ratio in air
+  rlw2H[1] = (Lw.d2H.int*1e-03) + 1 #convert to water vapor 2H ratio in air
   
-  rlw18O.P[1] = (Lw.d18O[1]*1e-03) + 1 #convert to water vapor 18O ratio in air
+  rlw18O[1] = (Lw.d18O.int*1e-03) + 1 #convert to water vapor 18O ratio in air
   
   #lake water d18O and d2H using a line
   #calculate Lw.d2H using d18O
-  Lw.d2H[1] = Lw.d18O[1]*Lw.slope.m + Lw.intc.m
+  Lw.d2H.int = Lw.d18O.int * Lw.slope.m + Lw.intc.m
   
   #here parameters are from *model input*
   Lw.intc.m ~ dnorm(Lw.intc, 1 / 1 ^ 2) 
   
   Lw.slope.m ~ dnorm(Lw.slope, 1 / 0.1 ^ 2) 
+  
   #lake water initial value
-  Lw.d18O[1] ~ dnorm(Lw.d18O.int, 1/0.2^2) #allowed some variation
-  
   #an initial value that centers around modern estimates, uninformative prior
-  Lw.d18O.int ~ dnorm(Lw.d18O.int.mean, 1/Lw.d18O.int.sd^2) #T(-10,5)
+  Lw.d18O.int ~ dnorm(Lw.d18O.int.mean, 1/Lw.d18O.int.sd^2) 
   
-  Lw.d18O.int.mean = -5
+  Lw.d18O.int.mean ~ dunif(-10,0)
   
-  Lw.d18O.int.sd = 3
+  Lw.d18O.int.sd = 1
   
   #####Runoff isotopes time series####
   #runoff ratio from delta values
-  rRo.2H[1:t] = (Ro.d2H[1:t] * 1e-3) + 1 #runoff 2H ratio from delta value
+  rRo.2H = (Ro.d2H * 1e-3) + 1 #runoff 2H ratio from delta value
   
-  rRo.18O[1:t] = (Ro.d18O[1:t] * 1e-3) + 1 #runoff 18O ratio from delta value
+  rRo.18O = (Ro.d18O * 1e-3) + 1 #runoff 18O ratio from delta value
   
   for (i in 1:t){
     #runoff d18O and d2H are correlated and evolve along MWL, but not a time series
     Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
-
-    Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-10)
-      
+    
+    Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-9)
+    
   }
   
-  # for (i in 2:t){
-  #   #runoff d18O and d2H are correlated and evolve along MWL
-  #   Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
-  #   
-  #   Ro.d18O[i] = Ro.d18O[i - 1] + Ro.d18O.cps[i]
-  #   
-  #   Ro.d18O.cps[i] ~ dnorm(Ro.d18O.cps[i - 1] * Ro.cps.ac, Ro.d18O.pre)
-  #   
-  # }
-  # Ro.d18O.cps[1] ~ dnorm(0, Ro.d18O.pre) #centered around 0, allowed some variation
-  # 
-  # Ro.cps.ac ~ dunif(0.01, 0.8) #should runoff d18O be autocorrelated?
-  # 
-  # Ro.d18O.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate) # ~0.25 per mil error/100 years
-  # Ro.d18O.pre.shp = 16
-  # Ro.d18O.pre.rate = 4
-  # 
-  # #calculate Ro.d2H using d18O
-  # Ro.d2H[1] = Ro.d18O[1]*Ro.slope.m + Ro.intc.m
-  # 
   #parameters are from *model input*
-  Ro.d18O.int.mean = -17
-
-  Ro.d18O.int.sd = 3
+  Ro.d18O.int.mean ~ dunif(-22,-12)
+  
+  Ro.d18O.int.sd = 2
   
   Ro.intc.m ~ dnorm(MWL.intc, 1 / 1 ^ 2)
   
   Ro.slope.m ~ dnorm(MWL.slope, 1 / 0.1 ^ 2)
   
-  #lake area, use bathymetric table
-  LA.P[1] = interp.lin(LV.P[1], GSL.volume, GSL.area)
-  #lake volume, use bathymetric table
-  LV.P[1] = interp.lin(L.level.int, GSL.level, GSL.volume) + Runoff[1]
-  
   #####Runoff amount#####
   # not an autocorrelated time series
   for (i in 1:t){
     
-    Runoff[i] ~ dlnorm(log(Runoff.int.mean), 2*log(Runoff.pre)) #allow some variation
+    Runoff[i] ~ dlnorm(log(Runoff.int.mean), log(Runoff.pre)) #allow some variation
     
   }
   
-  Runoff.int.mean ~ dnorm(3.5,1/1^2)
+  Runoff.int.mean ~ dnorm(3.5,1/0.5^2) #3.5 +- 0.5, from Mohammed 2011
   
   Runoff.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate)
   Runoff.pre.shp = 200
@@ -511,21 +482,21 @@ model {
   AT[1] = LST[1] + T.gap
   #temperature gap is modeled as stochastic
   T.gap ~ dnorm(T.gap.mean, 1/0.5^2) # allow some variation
-  T.gap.mean ~ dnorm(10, 1/1^2)
+  T.gap.mean ~ dnorm(5, 1/1^2)
   # initiate the series with an reasonable prior
   LST.k[1] = 273.15 + LST[1]
   LST[1] ~ dnorm(LST.int, LST.pre) #allowed some variation
   
-  #an uninformative initial value: 20+-2 degrees C with a warm season bias, Steenburgh et al 2000
-  LST.int ~ dnorm(20, 1/2^2) T(16, 24)  
+  #an uninformative initial value: 20+-5 degrees C with a warm season bias, Steenburgh et al 2000
+  LST.int ~ dunif(15, 25)  
   
-  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.25 degrees error/100 years
+  LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.75 degrees error/100 years
   LST.pre.shp = 50
   LST.pre.rate = 2
   
   #####starting values####
   
-  nsws ~ dnorm(nsws.mean, 1/0.5^2) #allow some variation
+  nsws ~ dnorm(nsws.mean, 1/0.5^2) T(4,7)#allow some variation
   nsws.mean ~ dnorm(5.8, 1/0.2^2) #wind speed data from Steenburgh, 2000
   
   #relative humidity ~0.35 +- 0.05
@@ -533,9 +504,6 @@ model {
   # 
   # rh ~ dnorm(rh.mean, 1/0.02^2) #allow some variation
   # rh.mean ~ dnorm(0.35, 1/0.05^2) #~0.35 +- 0.05 rh
-  
-  #lake starting level: 1280 +-1 meters
-  L.level.int ~ dnorm(1280,1/1^2) T(1275,1286)#m
   
   # #NaCl, MgCl2, 
   # salt.molar.mass = (58.44*0.7591 + 95.211*0.1092)
