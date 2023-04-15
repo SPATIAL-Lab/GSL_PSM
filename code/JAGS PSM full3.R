@@ -97,7 +97,7 @@ model {
   stor.par.lcwax ~ dbeta(10,80) #1/stor.par ~0.1, longer storage for lc wax
   
   #very little carbon dead lc alkanes
-  f.C14d.lcwax ~ dbeta(2,100) #~2% dead material
+  f.C14d.lcwax ~ dbeta(2,100) #~0.5% dead material
 
   #get weighted averaged carbonate d18O
   # for (i in 1:(t - t.avg)){
@@ -134,7 +134,7 @@ model {
   
   w.stor.carb = dexp(abs((1 - t.avg):0), stor.par.carb)
   
-  stor.par.carb ~ dbeta(5,10) #1/stor.par ~0.3, shorter storage for carbonates
+  stor.par.carb ~ dbeta(2,10) #1/stor.par ~0.3, shorter storage for carbonates
   
   f.C14d.carb ~ dbeta(10,200) #~5% carbon dead material
 
@@ -237,7 +237,7 @@ model {
   
   #Assuming a gap between MAP d2H and runoff, as a prescribed covariance
   d2H.gap.MAP_Ro ~ dnorm(d2H.gap.MAP_Ro.mean, 1/1^2) #allow some variation
-  d2H.gap.MAP_Ro.mean ~ dnorm(50,1/5^2) #gap mean = 50 +-5, informed by modern value
+  d2H.gap.MAP_Ro.mean ~ dnorm(45,1/5^2) #gap mean = 50 +-5, informed by modern value
   
   #get mid-chain alkanes epsilon and water mixture.
   #proximal lake water mixing
@@ -279,7 +279,7 @@ model {
     # E.rate[i] =  2.909* nsws * (LA[i]*1e6)^-0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 210*1000
     
     #McMillan 1973 for wind function
-    E.rate[i] =  (3.6 + 2.5 * nsws) * (5/LA[i])^0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 150*1000
+    E.rate[i] =  (3.6 + 2.5 * nsws) * (5/LA[i])^0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 183*1000
     #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
     
     #fresh water saturation vapor pressure Teten's eq in kPa
@@ -337,7 +337,7 @@ model {
   #lake evaporation is happening primarily between April and October, 7 months
   # E.rate[1] =  2.909* nsws * (LA[1]*1e6)^-0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 210*1000
   
-  E.rate[1] =  (3.6 + 2.5 * nsws) * (5/LA[1])^0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 150*1000
+  E.rate[1] =  (3.6 + 2.5 * nsws) * (5/LA[1])^0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 183*1000
   
   #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
   
@@ -432,13 +432,26 @@ model {
   
   rRo.18O = (Ro.d18O * 1e-3) + 1 #runoff 18O ratio from delta value
   
-  for (i in 1:t){
+  for (i in 2:t){
     #runoff d18O and d2H are correlated and evolve along MWL, but not a time series
     Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
     
-    Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-9)
+    # Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-9)
+    
+    Ro.d18O[i] = Ro.d18O[i - 1] + Ro.d18O.cps[i]
+    
+    Ro.d18O.cps[i] ~ dnorm(LST.cps[i] * T.cps.slope * sl.cpsAT.18O, 1/0.5^2)
     
   }
+  # covariance between runoff d18O and LST, use a normal distribution for the slope, applied to cps 
+  Ro.d2H[1] = Ro.d18O[1]*Ro.slope.m + Ro.intc.m
+  
+  Ro.d18O[1] = Ro.d18O.int.mean #initial value
+  
+  Ro.d18O.cps[1] ~ dnorm(LST.cps[1] * T.cps.slope * sl.cpsAT.18O, 1/0.3^2)
+  
+  #slope is from Sturm et al 2010, but consider LST being less variable than MAT
+  sl.cpsAT.18O ~ dnorm(0.5, 1/0.1^2) T(0,0.911) #lowest is 0 (not correlated)
   
   #parameters are from *model input*
   Ro.d18O.int.mean ~ dunif(-22,-12)
@@ -457,7 +470,7 @@ model {
     
   }
   
-  Runoff.int.mean ~ dnorm(3.5,1/0.5^2) #3.5 +- 0.5, from Mohammed 2011
+  Runoff.int.mean ~ dnorm(3.5,1/0.5^2) T(2,)#3.5 +- 0.5, from Mohammed 2011
   
   Runoff.pre ~ dgamma(Runoff.pre.shp, Runoff.pre.rate)
   Runoff.pre.shp = 200
@@ -468,18 +481,22 @@ model {
   for (i in 2:t){
     LST.k[i] = 273.15 + LST[i]
     
-    AT[i] = LST[i] + T.gap #air temperature of the warm season is set at a constant offset
+    AT[i] = AT[i - 1] + LST.cps[i] * T.cps.slope + T.gap #air temperature of the warm season is set at a constant offset
     
     LST[i] = LST[i - 1] + LST.cps[i]
     
     LST.cps[i] ~ dnorm(LST.cps[i - 1] * LST.cps.ac, LST.pre) T(-1,1)
     
   }
+  
+  AT[1] = LST[1] + LST.cps[1] * T.cps.slope + T.gap
+  
   LST.cps[1] ~ dnorm(0, LST.pre) #allowed some variation
   
   LST.cps.ac ~ dunif(0.001, 0.8)
   
-  AT[1] = LST[1] + T.gap
+  #Air temperature covaries with LST, but at a slightly higher magnitude
+  T.cps.slope ~ dnorm(1.5, 1/0.2^2) T(1,2)
   #temperature gap is modeled as stochastic
   T.gap ~ dnorm(T.gap.mean, 1/0.5^2) # allow some variation
   T.gap.mean ~ dnorm(5, 1/1^2)
