@@ -179,12 +179,12 @@ model {
     
     d2H.MAP[i] = Ro.d2H[i] + d2H.gap.MAP_Ro
 
-    #lake carbonate d18O (VPDB) from lake water d18O (VSMOW)
+    #lake carbonate (aragonite) d18O (VPDB) from lake water d18O (VSMOW) #Kim et al 2007 
     carb.d18O.vsmow[i] = Lw.d18O[i] + 17.88 * (1000/LST.k[i]) - 31.14#this is vsmow!
 
   }
 
-  # alpha.arag.intc ~ dnorm(31.14, 1/0.46^2) #Kim et al 2007 
+  # alpha.arag.intc ~ dnorm(31.14, 1/0.46^2) 
   # alpha.arag.slope ~ dnorm(17.88, 1/0.13^2)
   
   #Brine shrimp cyst slopes and intercepts, Nielson and Bowen 2010
@@ -257,7 +257,7 @@ model {
   
   prx.L.v = LV * f.m.ro
   #fraction of lake water that is mixed with runoff, let the model explore
-  f.m.ro ~ dbeta(30,80)
+  f.m.ro ~ dbeta(20,40)
   
   ###EVN MODEL###
   #results: lake water d18O, d2H, salinity
@@ -397,8 +397,8 @@ model {
   alphak.2H = 1 - 12.5 * (1 - rh) * (1 - f) * 1e-3 #wind speed lower than 7 m/s
   alphak.18O = 1 - 14.2 * (1 - rh) * (1 - f) * 1e-3
   
-  #f: fraction of advected air over lake, stochastic, Tanganyika is set at 0.3, GSL is set at a similar value
-  f = 0.3
+  #f: fraction of advected air over lake, Tanganyika is set at 0.3, GSL is set at a slightly higher value
+  f = 0.4
   # f ~ dbeta(20, 50)
   # f ~ dnorm(f.mean, 1/0.05^2) T(0.2,0.4)#allow some variation, but with hard cutoffs
   # f.mean ~ dnorm(0.3, 1/0.02^2) #~0.3 +- 0.02 rh
@@ -481,7 +481,7 @@ model {
   for (i in 2:t){
     LST.k[i] = 273.15 + LST[i]
     
-    AT[i] = AT[i - 1] + LST.cps[i] * T.cps.slope + T.gap #air temperature of the warm season is set at a constant offset
+    AT[i] = LST[i - 1] + LST.cps[i] * T.cps.slope + T.gap #air temperature of the warm season is set at a constant offset
     
     LST[i] = LST[i - 1] + LST.cps[i]
     
@@ -496,7 +496,7 @@ model {
   LST.cps.ac ~ dunif(0.001, 0.8)
   
   #Air temperature covaries with LST, but at a slightly higher magnitude
-  T.cps.slope ~ dnorm(1.5, 1/0.2^2) T(1,2)
+  T.cps.slope ~ dnorm(1.2, 1/0.1^2) T(1,2)
   #temperature gap is modeled as stochastic
   T.gap ~ dnorm(T.gap.mean, 1/0.5^2) # allow some variation
   T.gap.mean ~ dnorm(5, 1/1^2)
