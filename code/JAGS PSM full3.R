@@ -158,9 +158,12 @@ model {
     BSdiet.d18O[i] = (rBSdiet.18O[i]-1) * 1e3
     
     #model algal cellulose d2H and d18O 
-    rBSdiet.2H[i] = rprx.L.2H[i] * (epsilon.2H.carbohy/1000 + 1)
+    #consider exchangable and non-exchangable H and O in cellulose
+    #Filot 2006 for H isotope exchange of cellulose
     
-    rBSdiet.18O[i] = rprx.L.18O[i] * (epsilon.18O.carbohy/1000 + 1)
+    rBSdiet.2H[i] = rprx.L.2H[i] * (epsilon.2H.carbohy/1000 + 1) * (1 - r.exH) + r.exH * rlw2H[i] * alpha.exH
+    
+    rBSdiet.18O[i] = rprx.L.18O[i] * (epsilon.18O.carbohy/1000 + 1) *(1 - r.exO) + r.exO * rlw18O[i] * alpha.exO
     
     #short chain wax from proximal lake water, convert ratio to delta 2H
     scwax.d2H[i] = (rscwax.2H[i]-1) * 1e3
@@ -183,6 +186,16 @@ model {
     carb.d18O.vsmow[i] = Lw.d18O[i] + 17.88 * (1000/LST.k[i]) - 31.14#this is vsmow!
 
   }
+  
+  #cellulose exchange ratio and alpha
+  
+  r.exH ~ dnorm(0.236, 1/ 0.007^2) #Filot et al 2006
+  
+  alpha.exH ~ dnorm(1.082, 1/0.014^2) #Filot et al 2006
+  
+  r.exO ~ dnorm(0.42, 1/ 0.07^2) #Cernusak et al 2005
+
+  alpha.exO ~ dnorm(1.027, 1/0.001^2) #Cernusak et al 2005
 
   # alpha.arag.intc ~ dnorm(31.14, 1/0.46^2) 
   # alpha.arag.slope ~ dnorm(17.88, 1/0.13^2)
@@ -228,12 +241,12 @@ model {
   # epsilon2H.lcwax.sd = 22
   
   #use the equation in McFarlin et al 2019, with slope and intercept, alkanes
-  lcwax.d2H.inc ~ dnorm(-129, 1/15^2)
-  lcwax.d2H.slope ~ dnorm(0.78, 1/0.01^2)
+  # lcwax.d2H.inc ~ dnorm(-129, 1/15^2)
+  # lcwax.d2H.slope ~ dnorm(0.78, 1/0.01^2)
   
   # #use the equation in McFarlin et al 2019, with slope and intercept for n-acid
-  # lcwax.d2H.inc ~ dnorm(-125, 1/20^2)
-  # lcwax.d2H.slope ~ dnorm(0.62, 1/0.01^2)
+  lcwax.d2H.inc ~ dnorm(-125, 1/20^2)
+  lcwax.d2H.slope ~ dnorm(0.62, 1/0.01^2)
   
   #Assuming a gap between MAP d2H and runoff, as a prescribed covariance
   d2H.gap.MAP_Ro ~ dnorm(d2H.gap.MAP_Ro.mean, 1/1^2) #allow some variation
@@ -257,7 +270,7 @@ model {
   
   prx.L.v = LV * f.m.ro
   #fraction of lake water that is mixed with runoff, let the model explore
-  f.m.ro ~ dbeta(20,40)
+  f.m.ro ~ dbeta(40,100) #~0.3
   
   ###EVN MODEL###
   #results: lake water d18O, d2H, salinity
