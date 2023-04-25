@@ -142,6 +142,9 @@ model {
   #convert vsmow to vpdb
   carb.d18O = 0.97001 * carb.d18O.vsmow - 29.99
   
+  #convert to delta
+  scwax.d2H = (rscwax.2H - 1) * 1e3
+  
   for (i in 1:t){
     #BS cysts
     BScyst.d2H[i] = BScyst.slope.lw.2H * Lw.d2H[i] + BScyst.slope.diet.2H * BSdiet.d2H[i] + BScyst.inc.2H
@@ -160,16 +163,12 @@ model {
     #model algal cellulose d2H and d18O 
     #consider exchangable and non-exchangable H and O in cellulose
     #Filot 2006 for H isotope exchange of cellulose
-    
-    rBSdiet.2H[i] = rprx.L.2H[i] * (epsilon.2H.carbohy/1000 + 1) * (1 - r.exH) + r.exH * rlw2H[i] * alpha.exH
-    
-    rBSdiet.18O[i] = rprx.L.18O[i] * (epsilon.18O.carbohy/1000 + 1) *(1 - r.exO) + r.exO * rlw18O[i] * alpha.exO
-    
-    #short chain wax from proximal lake water, convert ratio to delta 2H
-    scwax.d2H[i] = (rscwax.2H[i]-1) * 1e3
+    rBSdiet.2H[i] = rprx.L.2H[i] * (epsilon.2H.carbohy/1000 + 1) #* (1 - r.exH) + r.exH * rlw2H[i] * alpha.exH
+    #Cernusak 2005 for exchangeable Oxygen in cellulose
+    rBSdiet.18O[i] = rprx.L.18O[i] * (epsilon.18O.carbohy/1000 + 1) #*(1 - r.exO) + r.exO * rlw18O[i] * alpha.exO
     
     #short chain wax from proximal lake water
-    rscwax.2H[i] = rprx.L.2H[i] * alpha2H.sc.alkane[i]
+    rscwax.2H[i] = rprx.L.2H[i] * alpha2H.sc.alkane[i] * alpha.alk.acid
     
     
     #short chain wax n-C17 epsilon scale with salinity, Sachse and Sachs
@@ -183,19 +182,27 @@ model {
     d2H.MAP[i] = Ro.d2H[i] + d2H.gap.MAP_Ro
 
     #lake carbonate (aragonite) d18O (VPDB) from lake water d18O (VSMOW) #Kim et al 2007 
-    carb.d18O.vsmow[i] = Lw.d18O[i] + 17.88 * (1000/LST.k[i]) - 31.14#this is vsmow!
+    carb.d18O.vsmow[i] = Lw.d18O[i] + 17.88 * (1000/LST.k[i]) - 31.14 + d18O.Mg.ef[i]#this is vsmow!
 
   }
+  #Mg effect on d18O araganite precipitation (passive degassing)
+  d18O.Mg.ef = -1 * sal*f.MgCl2/95.211*1000/902.5 #Kim et al 2007
+  
+  #n-alkane to n-alkanoic acid fractionation: Chikaraishi & Naraoka 2007
+  
+  alpha.alk.acid = epsilon.alk.acid * 1e-03 + 1 
+  
+  epsilon.alk.acid ~ dnorm (25, 1/16^2) T(0,) #sd is large, but n-acid should be more 2H enriched
   
   #cellulose exchange ratio and alpha
   
-  r.exH ~ dnorm(0.236, 1/ 0.007^2) #Filot et al 2006
-  
-  alpha.exH ~ dnorm(1.082, 1/0.014^2) #Filot et al 2006
-  
-  r.exO ~ dnorm(0.42, 1/ 0.07^2) #Cernusak et al 2005
-
-  alpha.exO ~ dnorm(1.027, 1/0.001^2) #Cernusak et al 2005
+  # r.exH ~ dnorm(0.37, 1/ 0.01^2) #Nielson and Bowen 2010: slope of 0.63 for algae grown in water
+  # 
+  # alpha.exH ~ dnorm(1.082, 1/0.014^2) #Filot et al 2006
+  # 
+  # r.exO ~ dnorm(0.31, 1/ 0.01^2) #Nielson and Bowen 2010: slope of 0.69 for algae grown in water
+  # 
+  # alpha.exO ~ dnorm(1.027, 1/0.001^2) #Cernusak et al 2005
 
   # alpha.arag.intc ~ dnorm(31.14, 1/0.46^2) 
   # alpha.arag.slope ~ dnorm(17.88, 1/0.13^2)
@@ -270,7 +277,7 @@ model {
   
   prx.L.v = LV * f.m.ro
   #fraction of lake water that is mixed with runoff, let the model explore
-  f.m.ro ~ dbeta(40,100) #~0.3
+  f.m.ro ~ dbeta(10,40) #~0.2
   
   ###EVN MODEL###
   #results: lake water d18O, d2H, salinity
@@ -411,7 +418,7 @@ model {
   alphak.18O = 1 - 14.2 * (1 - rh) * (1 - f) * 1e-3
   
   #f: fraction of advected air over lake, Tanganyika is set at 0.3, GSL is set at a slightly higher value
-  f = 0.4
+  f = 0.3
   # f ~ dbeta(20, 50)
   # f ~ dnorm(f.mean, 1/0.05^2) T(0.2,0.4)#allow some variation, but with hard cutoffs
   # f.mean ~ dnorm(0.3, 1/0.02^2) #~0.3 +- 0.02 rh
@@ -464,7 +471,7 @@ model {
   Ro.d18O.cps[1] ~ dnorm(LST.cps[1] * T.cps.slope * sl.cpsAT.18O, 1/0.3^2)
   
   #slope is from Sturm et al 2010, but consider LST being less variable than MAT
-  sl.cpsAT.18O ~ dnorm(0.5, 1/0.1^2) T(0,0.911) #lowest is 0 (not correlated)
+  sl.cpsAT.18O ~ dnorm(0.5, 1/0.2^2) T(0,0.911) #lowest is 0 (not correlated)
   
   #parameters are from *model input*
   Ro.d18O.int.mean ~ dunif(-22,-12)
@@ -509,7 +516,7 @@ model {
   LST.cps.ac ~ dunif(0.001, 0.8)
   
   #Air temperature covaries with LST, but at a slightly higher magnitude
-  T.cps.slope ~ dnorm(1.2, 1/0.1^2) T(1,2)
+  T.cps.slope ~ dnorm(1.5, 1/0.2^2) T(1,2)
   #temperature gap is modeled as stochastic
   T.gap ~ dnorm(T.gap.mean, 1/0.5^2) # allow some variation
   T.gap.mean ~ dnorm(5, 1/1^2)
@@ -518,7 +525,7 @@ model {
   LST[1] ~ dnorm(LST.int, LST.pre) #allowed some variation
   
   #an uninformative initial value: 20+-5 degrees C with a warm season bias, Steenburgh et al 2000
-  LST.int ~ dunif(15, 25)  
+  LST.int ~ dunif(10, 30)  
   
   LST.pre ~ dgamma(LST.pre.shp, LST.pre.rate) # ~0.75 degrees error/100 years
   LST.pre.shp = 50
