@@ -299,16 +299,21 @@ model {
     # E.rate[i] =  2.909* nsws * (LA[i]*1e6)^-0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 210*1000
     
     #McMillan 1973 for wind function
-    E.rate[i] =  (3.6 + 2.5 * nsws) * (5/LA[i])^0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 150*1000
+    E.rate[i] =  (3.6 + 2.5 * nsws) * (5/LA[i])^0.05 * (S.coeff[i] - rh) * Vpfs[i]/(2.501-0.002361*LST[i])/1e6 * 183*1000
     #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
     
     #fresh water saturation vapor pressure Teten's eq in kPa
     Vpfs[i] = 0.61078 * exp(17.269 * AT[i]/(237.3 + AT[i])) #saturated vapor pressure
     
     #evaporated water fractionation, ratio for water vapor in boundary layer air
-    re2H[i] = (rlw2H[i]/Alpha.2H[i]-rh.n[i]*f*ra2H) / (((1-rh.n[i])/alphak.2H[i]) + (rh.n[i]*(1-f))) #Dee 2015
+    # re2H[i] = (rlw2H[i]/Alpha.2H[i]-rh.n[i]*f*ra2H) / (((1-rh.n[i])/alphak.2H[i]) + (rh.n[i]*(1-f))) #Dee 2015
+    # 
+    # re18O[i] = (rlw18O[i]/Alpha.18O[i]-rh.n[i]*f*ra18O) / (((1-rh.n[i])/alphak.18O[i]) + (rh.n[i]*(1-f))) #Dee 2015
+    # 
+    re2H[i] = (rlw2H[i]/Alpha.2H[i]-rh.n[i]*ra2H) / (1-rh.n[i])*alphak.2H[i]
     
-    re18O[i] = (rlw18O[i]/Alpha.18O[i]-rh.n[i]*f*ra18O) / (((1-rh.n[i])/alphak.18O[i]) + (rh.n[i]*(1-f))) #Dee 2015
+    #re18O is the 18O ratio for water vapor in boundary layer air
+    re18O[i] = (rlw18O[i]/Alpha.18O[i]-rh.n[i]*ra18O) / (1-rh.n[i])*alphak.18O[i] 
     
     #equilibrium fractionations >1, temperature dependent, range : 0 to 100 degrees C
     Alpha.2H[i] = exp(24844/(LST.k[i]^2)- 76.248/LST.k[i] + 0.05261) * H.frac.coef[i] #Majoube 1971 + salt correction
@@ -362,7 +367,7 @@ model {
   #lake evaporation is happening primarily between April and October, 7 months
   # E.rate[1] =  2.909* nsws * (LA[1]*1e6)^-0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 210*1000
   
-  E.rate[1] =  (3.6 + 2.5 * nsws) * (5/LA[1])^0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 150*1000
+  E.rate[1] =  (3.6 + 2.5 * nsws) * (5/LA[1])^0.05 * (S.coeff[1] - rh) * Vpfs[1]/(2.501-0.002361*LST[1])/1e6 * 183*1000
   
   #if S.coeff[i] - rh > 0, then evaporation happens, if not, condensation happens
   
@@ -372,10 +377,15 @@ model {
   #####LST-dependent evaporation isotope calculations####
   
   
-  re2H[1] = (rlw2H[1]/Alpha.2H[1]-rh.n[1]*f*ra2H) / (((1-rh.n[1])/alphak.2H[1]) + (rh.n[1] * (1 - f))) #Dee 2015
+  # re2H[1] = (rlw2H[1]/Alpha.2H[1]-rh.n[1]*f*ra2H) / (((1-rh.n[1])/alphak.2H[1]) + (rh.n[1] * (1 - f))) #Dee 2015
+  # 
+  # #re18O is the 18O ratio for water vapor in boundary layer air
+  # re18O[1] = (rlw18O[1]/Alpha.18O[1]-rh.n[1]*f*ra18O) / (((1-rh.n[1])/alphak.18O[1]) + (rh.n[1] * (1 - f))) #Dee 2015
+  
+  re2H[1] = (rlw2H[1]/Alpha.2H[1]-rh.n[1]*ra2H) / (1-rh.n[1])*alphak.2H[1]
   
   #re18O is the 18O ratio for water vapor in boundary layer air
-  re18O[1] = (rlw18O[1]/Alpha.18O[1]-rh.n[1]*f*ra18O) / (((1-rh.n[1])/alphak.18O[1]) + (rh.n[1] * (1 - f))) #Dee 2015
+  re18O[1] = (rlw18O[1]/Alpha.18O[1]-rh.n[1]*ra18O) / (1-rh.n[1])*alphak.18O[1] 
   
   #equilibrium fractionations >1, temperature dependent; Majoube, 1971, correction for salinity (Gibson 2016, Koehler 2013)
   Alpha.2H[1] = exp(24844/(LST.k[1]^2)- 76.248/LST.k[1] + 0.05261) * H.frac.coef[1]
@@ -419,10 +429,10 @@ model {
   
   V.slope.m ~ dnorm(V.slope, 1 / 0.1 ^ 2) #with some uncertainty
   
-  air.d18O ~ dnorm(air.d18O.int, 1/0.2^2) #allowed some variation
+  air.d18O ~ dnorm(air.d18O.int, 1/0.5^2) #allowed some variation
   
   #an initial value that centers around estimates of modern warm season water vapor 
-  air.d18O.int ~ dnorm(d18O.vap.warm , 1/0.5^2)
+  air.d18O.int ~ dnorm(d18O.vap.warm , 1/2^2)
   
   #f: fraction of advected air over lake, Tanganyika is set at 0.3, GSL is set at a slightly higher value
   f = 0.3
@@ -459,29 +469,35 @@ model {
   
   rRo.18O = (Ro.d18O * 1e-3) + 1 #runoff 18O ratio from delta value
   
-  for (i in 2:t){
+  for (i in 1:t){
     #runoff d18O and d2H are correlated and evolve along MWL, but not a time series
     Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
-    
-    # Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-9)
-    
-    Ro.d18O[i] = Ro.d18O[i - 1] + Ro.d18O.cps[i]
-    
-    Ro.d18O.cps[i] ~ dnorm(LST.cps[i] * T.cps.slope * sl.cpsAT.18O, 1/0.5^2)
-    
+
+    Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-9)
+
   }
-  # covariance between runoff d18O and LST, use a normal distribution for the slope, applied to cps 
-  Ro.d2H[1] = Ro.d18O[1]*Ro.slope.m + Ro.intc.m
   
-  Ro.d18O[1] = Ro.d18O.int.mean #initial value
-  
-  Ro.d18O.cps[1] ~ dnorm(LST.cps[1] * T.cps.slope * sl.cpsAT.18O, 1/0.3^2)
-  
-  #slope is from Sturm et al 2010, but consider LST being less variable than MAT
-  sl.cpsAT.18O ~ dnorm(0.5, 1/0.2^2) T(0,0.911) #lowest is 0 (not correlated)
+  # for (i in 2:t){
+  #   #runoff d18O and d2H are correlated and evolve along MWL, but not a time series
+  #   Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
+  # 
+  #   Ro.d18O[i] = Ro.d18O[i - 1] + Ro.d18O.cps[i]
+  # 
+  #   Ro.d18O.cps[i] ~ dnorm(LST.cps[i] * T.cps.slope * sl.cpsAT.18O, 1/1^2)
+  # 
+  # }
+  # # covariance between runoff d18O and LST, use a normal distribution for the slope, applied to cps
+  # Ro.d2H[1] = Ro.d18O[1]*Ro.slope.m + Ro.intc.m
+  # 
+  # Ro.d18O[1] = Ro.d18O.int.mean #initial value
+  # 
+  # Ro.d18O.cps[1] ~ dnorm(LST.cps[1] * T.cps.slope * sl.cpsAT.18O, 1/1^2)
+  # 
+  # #slope is from Sturm et al 2010, but consider LST being less variable than MAT
+  # sl.cpsAT.18O ~ dnorm(0.5, 1/0.2^2) T(0,0.911) #lowest is 0 (not correlated)
   
   #parameters are from *model input*
-  Ro.d18O.int.mean ~ dunif(-22,-12)
+  Ro.d18O.int.mean ~ dunif(-20,-15)
   
   Ro.d18O.int.sd = 2
   
@@ -544,7 +560,7 @@ model {
   nsws.mean ~ dnorm(5.8, 1/0.2^2) #wind speed data from Steenburgh, 2000
   
   #relative humidity ~0.35 +- 0.05
-  rh ~ dbeta(40, 72) T(0.2,0.5)
+  rh ~ dbeta(40, 72) T(0.1,0.5)
   # 
   # rh ~ dnorm(rh.mean, 1/0.02^2) #allow some variation
   # rh.mean ~ dnorm(0.35, 1/0.05^2) #~0.35 +- 0.05 rh
@@ -553,6 +569,7 @@ model {
   # salt.molar.mass = (58.44*0.7591 + 95.211*0.1092)
   # #NaCl, MgCl2, Na2SO4, KCl
   
+  #salt correction to equilibrium fractionation factors
   sal.mol.ms = (58.44*f.NaCl + 95.211*f.MgCl2)
   
   sal.corr.d18O = (NaCl.mc.O * f.NaCl + MgCl2.mc.O * f.MgCl2)
