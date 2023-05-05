@@ -125,6 +125,20 @@ GSL.FAME.C16.summ <- GSL.FAME.C16.corr%>% group_by(Depth_cm) %>%
 
 GSL.FAME.C16.naom <- na.omit(GSL.FAME.C16.summ)
 
+######C18
+GSL.FAME.C18 <- GSL.FAME.raw %>% filter(compound=="C18")
+C18 <- 18
+
+#mass balance correction for FAME values
+GSL.FAME.C18.corr <- GSL.FAME.C18 %>% 
+  mutate(d2H.corr = (d2H * (2 * C18 + 2) - 3 * d2H.meOH)/(2 * C18 - 1))
+
+#calculate mean and sd of the 3 repeats 
+GSL.FAME.C18.summ <- GSL.FAME.C18.corr%>% group_by(Depth_cm) %>%
+  summarize(C18.avg = mean(d2H.corr),C18.sd = sd(d2H.corr),PA.18 = mean(area2+area3))
+
+GSL.FAME.C18.naom <- na.omit(GSL.FAME.C18.summ)
+
 #long chain represent terrestrial plants from runoff
 GSL.FAME.C28 <- GSL.FAME.raw %>% filter(compound=="C28")
 C28 <- 28
@@ -148,8 +162,9 @@ dim(GSL.scwax.age) #row = iteration, col = depths
 dim(GSL.lcwax.age)
 
 #preliminary plot
-plot(GSL.FAME.C16.summ$Depth_cm, GSL.FAME.C16.summ$C16.avg,type="l",col = "blue", ylim=c(-250,-100))
+plot(GSL.FAME.C16.summ$Depth_cm, GSL.FAME.C16.summ$C16.avg,type="l",col = "blue", ylim=c(-220,-100))
 lines(GSL.FAME.C28.summ$Depth_cm, GSL.FAME.C28.summ$C28.avg,col="red")
+lines(GSL.FAME.C18.summ$Depth_cm, GSL.FAME.C18.summ$C18.avg,col="green")
 
 plot(GSL.FAME.C16.naom$Depth_cm,ratio.17.n, type = "l")
 

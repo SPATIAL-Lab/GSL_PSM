@@ -1,4 +1,17 @@
 model {
+  
+  #align the array to day 0, this produces a timeline that is aligned to day 0 (present), 
+  #with increasing uncertainty going back in time
+  tl = tl.int - day.align
+  
+  #total number of days in the core
+  day.align = max(tl.all)#this is the oldest day of the simulation
+  
+  #determine which dataset has the oldest sample
+  
+  tl.all = c(tl.int[carb.bins[n.carb]],tl.int[cyst.bins[n.cyst]],tl.int[scwax.bins[n.sc.wax]],tl.int[lcwax.bins[n.lc.wax]])
+  
+  tl.int <- 1:t
 
   #evaluation, use carb.bins
   for (i in 1:n.carb){
@@ -94,7 +107,7 @@ model {
   
   w.stor.lcwax = dexp(abs((1 - t.avg):0), stor.par.lcwax)
   
-  stor.par.lcwax ~ dbeta(10,80) #1/stor.par ~0.1, longer storage for lc wax
+  stor.par.lcwax ~ dbeta(5,40) #1/stor.par ~0.1, longer storage for lc wax
   
   #very little carbon dead lc alkanes
   f.C14d.lcwax ~ dbeta(2,100) #~0.5% dead material
@@ -128,13 +141,13 @@ model {
   
   w.trnpt.carb = dnorm(abs((1 - t.avg):0), trnpt.carb.mean, 1/5^2)
   
-  trnpt.carb.mean ~ dunif(1,t.avg-5) #uninformative prior
+  trnpt.carb.mean ~ dnorm(15,1/5^2) T(1+5, t.avg-5) #a reasonable prior
   
   # w.stor.carb = dexp(0:(t.avg - 1), stor.par.carb)
   
   w.stor.carb = dexp(abs((1 - t.avg):0), stor.par.carb)
   
-  stor.par.carb ~ dbeta(2,10) #1/stor.par ~0.3, shorter storage for carbonates
+  stor.par.carb ~ dbeta(5,20) #1/stor.par ~0.3, shorter storage for carbonates
   
   f.C14d.carb ~ dbeta(10,200) #~5% carbon dead material
 
@@ -167,7 +180,7 @@ model {
     #Cernusak 2005 for exchangeable Oxygen in cellulose
     rBSdiet.18O[i] = rprx.L.18O[i] * (epsilon.18O.carbohy/1000 + 1) #*(1 - r.exO) + r.exO * rlw18O[i] * alpha.exO
     
-    #short chain wax from proximal lake water
+    #short chain wax from proximal lake water and n-C18 acid
     rscwax.2H[i] = rprx.L.2H[i] * alpha2H.sc.alkane[i] * alpha.alk.acid
     
     
@@ -345,16 +358,8 @@ model {
     
     rlw18O[i] = (rlw18O[i - 1] * LV[i - 1]  + rRo.18O[i - 1] * Runoff[i - 1] - Evap[i - 1] * re18O[i - 1])/LV[i]
     
-    #Lake water isotope mass balance
-    # rlw2H[i] = (rlw2H[i - 1] * LV[i - 1]  - rRo.2H[i - 1] * Runoff[i - 1] + Evap[i - 1] * re2H[i - 1])/LV[i]
-    # 
-    # rlw18O[i] = (rlw18O[i - 1] * LV[i - 1]  - rRo.18O[i - 1] * Runoff[i - 1] + Evap[i - 1] * re18O[i - 1])/LV[i]
-    
     # #lake volume, use bathymetric table
     LV[i] = LV[i - 1] + Runoff[i - 1] - Evap[i - 1]
-    
-    #devolving lake volume LV[i]
-    # LV[i] = LV[i - 1] - Runoff[i - 1] + Evap[i - 1]
     
   }
   
@@ -469,32 +474,32 @@ model {
   
   rRo.18O = (Ro.d18O * 1e-3) + 1 #runoff 18O ratio from delta value
   
-  for (i in 1:t){
-    #runoff d18O and d2H are correlated and evolve along MWL, but not a time series
-    Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
-
-    Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-9)
-
-  }
-  
-  # for (i in 2:t){
+  # for (i in 1:t){
   #   #runoff d18O and d2H are correlated and evolve along MWL, but not a time series
   #   Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
   # 
-  #   Ro.d18O[i] = Ro.d18O[i - 1] + Ro.d18O.cps[i]
-  # 
-  #   Ro.d18O.cps[i] ~ dnorm(LST.cps[i] * T.cps.slope * sl.cpsAT.18O, 1/1^2)
+  #   Ro.d18O[i] ~ dnorm(Ro.d18O.int.mean, 1/Ro.d18O.int.sd^2) T(-25,-9)
   # 
   # }
-  # # covariance between runoff d18O and LST, use a normal distribution for the slope, applied to cps
-  # Ro.d2H[1] = Ro.d18O[1]*Ro.slope.m + Ro.intc.m
-  # 
-  # Ro.d18O[1] = Ro.d18O.int.mean #initial value
-  # 
-  # Ro.d18O.cps[1] ~ dnorm(LST.cps[1] * T.cps.slope * sl.cpsAT.18O, 1/1^2)
-  # 
-  # #slope is from Sturm et al 2010, but consider LST being less variable than MAT
-  # sl.cpsAT.18O ~ dnorm(0.5, 1/0.2^2) T(0,0.911) #lowest is 0 (not correlated)
+  
+  for (i in 2:t){
+    #runoff d18O and d2H are correlated and evolve along MWL, but not a time series
+    Ro.d2H[i] = Ro.d18O[i]*Ro.slope.m + Ro.intc.m
+
+    Ro.d18O[i] = Ro.d18O[i - 1] + Ro.d18O.cps[i]
+
+    Ro.d18O.cps[i] ~ dnorm(LST.cps[i] * T.cps.slope * sl.cpsAT.18O, 1/1^2)
+
+  }
+  # covariance between runoff d18O and LST, use a normal distribution for the slope, applied to cps
+  Ro.d2H[1] = Ro.d18O[1]*Ro.slope.m + Ro.intc.m
+
+  Ro.d18O[1] = Ro.d18O.int.mean #initial value
+
+  Ro.d18O.cps[1] ~ dnorm(LST.cps[1] * T.cps.slope * sl.cpsAT.18O, 1/1^2)
+
+  #slope is from Sturm et al 2010, but consider LST being less variable than MAT
+  sl.cpsAT.18O ~ dnorm(0.5, 1/0.2^2) T(0,0.911) #lowest is 0 (not correlated)
   
   #parameters are from *model input*
   Ro.d18O.int.mean ~ dunif(-20,-15)
@@ -541,8 +546,8 @@ model {
   #Air temperature covaries with LST, but at a slightly higher magnitude
   T.cps.slope ~ dnorm(1.5, 1/0.2^2) T(1,2)
   #temperature gap is modeled as stochastic
-  T.gap ~ dnorm(T.gap.mean, 1/0.5^2) # allow some variation
-  T.gap.mean ~ dnorm(5, 1/1^2)
+  T.gap ~ dnorm(5, 1/0.5^2) # allow some variation
+
   # initiate the series with an reasonable prior
   LST.k[1] = 273.15 + LST[1]
   LST[1] ~ dnorm(LST.int, LST.pre) #allowed some variation
@@ -556,8 +561,7 @@ model {
   
   #####starting values####
   
-  nsws ~ dnorm(nsws.mean, 1/0.5^2) T(4,7)#allow some variation
-  nsws.mean ~ dnorm(5.8, 1/0.2^2) #wind speed data from Steenburgh, 2000
+  nsws ~ dnorm(5.8, 1/0.5^2) T(4,7)#wind speed data from Steenburgh, 2000
   
   #relative humidity ~0.35 +- 0.05
   rh ~ dbeta(40, 72) T(0.1,0.5)
