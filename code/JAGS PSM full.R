@@ -2,14 +2,14 @@ model {
   
   #align the array to day 0, this produces a timeline that is aligned to day 0 (present), 
   #with increasing uncertainty going back in time
-  tl = tl.int - day.align
+  tl = - age.align
   
   #total number of days in the core
-  day.align = max(tl.all)#this is the oldest day of the simulation
+  age.align = max(tl.all)#this is the oldest day of the simulation
   
   #determine which dataset has the oldest sample
   
-  tl.all = c(tl.int[carb.bins[n.carb]],tl.int[cyst.bins[n.cyst]],tl.int[scwax.bins[n.sc.wax]],tl.int[lcwax.bins[n.lc.wax]])
+  tl.all = c(age.carb.d, age.lc.d, age.sc.d, age.cyst.d)  
   
   tl.int <- 1:t
   
@@ -81,23 +81,15 @@ model {
     lcwax.d2H.dc[i] = sum(lcwax.d2H[(i - t.avg+1):i] * w.avg.lcwax)*(1 - f.C14d.lcwax) + f.C14d.lcwax* d2H.C14d.lcwax
   }
   
-  d2H.C14d.lcwax ~ dnorm(-150,1/15^2)#mesozoic lc wax is !-150 per mil, sd = 30!!!!!!!!!!!!!!!!!!!!!!!!!
+  d2H.C14d.lcwax ~ dnorm(-150,1/15^2)
   
   #evaluate lc wax 14C offset
-  # lcwax.offset ~ dnorm(lcwax.offset.m, 1/200^2) #uncertainty of 200 years for long chain wax 
-  # 
-  # lcwax.offset.m = sum(0:(t.avg - 1) * age.res * w.avg.lcwax)*(1 - f.C14d.lcwax) + 50000 * f.C14d.lcwax
-  
   lcwax.offset ~ dnorm(lcwax.offset.m, 1/200^2) #uncertainty of 200 years for long chain wax 
   
   lcwax.offset.m = sum(abs((1 - t.avg):0) * age.res * w.avg.lcwax)*(1 - f.C14d.lcwax) + 50000 * f.C14d.lcwax
   
   #normalized weights
-  # w.avg.lcwax <- (w.trnpt.lcwax+w.stor.lcwax)/sum(w.trnpt.lcwax+w.stor.lcwax)
-  
   w.avg.lcwax <- (w.trnpt.lcwax+w.stor.lcwax)/sum(w.trnpt.lcwax+w.stor.lcwax)
-  
-  # w.trnpt.lcwax = dnorm(0:(t.avg - 1), trnpt.lcwax.mean, 1/10^2)
   
   w.trnpt.lcwax = dnorm(abs((1 - t.avg):0), trnpt.lcwax.mean, 1/10^2)
   
@@ -112,20 +104,10 @@ model {
   #very little carbon dead lc alkanes
   f.C14d.lcwax ~ dbeta(2,100) #~0.5% dead material
   
-  #get weighted averaged carbonate d18O
-  # for (i in 1:(t - t.avg)){
-  #   carb.d18O.dc[i] = sum(carb.d18O[i:(i + t.avg - 1)] * w.avg.carb)*(1 - f.C14d.carb) + d18O.C14d.carb * f.C14d.carb 
-  # }
-  
   for (i in t.avg:t ){
     carb.d18O.dc[i] = sum(carb.d18O[(i - t.avg+1):i] * w.avg.carb)*(1 - f.C14d.carb) + d18O.C14d.carb * f.C14d.carb
   }
   d18O.C14d.carb ~ dnorm(-5,1/1^2)#lake carbonate has d18O near -5 per mil, sd = 1!!!!!!!!!!!!!!!!!!!!!!!!!
-  
-  #evaluate carbonate 14C offset
-  # carb.offset ~ dnorm(carb.offset.m, 1/200^2) #uncertainty of 200 years for carbonates 
-  # 
-  # carb.offset.m = sum(0:(t.avg - 1) * age.res * w.avg.carb)*(1 - f.C14d.carb) + 50000 * f.C14d.carb
   
   #evaluate carbonate 14C offset
   carb.offset ~ dnorm(carb.offset.m, 1/200^2) #uncertainty of 200 years for carbonates 
@@ -133,17 +115,11 @@ model {
   carb.offset.m = sum(abs((1 - t.avg):0) * age.res * w.avg.carb)*(1 - f.C14d.carb) + 50000 * f.C14d.carb
   
   #normalized weights
-  # w.avg.carb = (w.trnpt.carb+w.stor.carb)/sum(w.trnpt.carb+w.stor.carb)
-  
   w.avg.carb = (w.trnpt.carb+w.stor.carb)/sum(w.trnpt.carb+w.stor.carb)
-  
-  # w.trnpt.carb = dnorm(0:(t.avg - 1), trnpt.carb.mean, 1/5^2)
   
   w.trnpt.carb = dnorm(abs((1 - t.avg):0), trnpt.carb.mean, 1/5^2)
   
   trnpt.carb.mean ~ dnorm(15,1/5^2) T(1+5, t.avg-5) #a reasonable prior
-  
-  # w.stor.carb = dexp(0:(t.avg - 1), stor.par.carb)
   
   w.stor.carb = dexp(abs((1 - t.avg):0), stor.par.carb)
   
@@ -217,9 +193,6 @@ model {
   
   alpha.exO ~ dnorm(1.027, 1/0.001^2) #Cernusak et al 2005
   
-  alpha.arag.intc ~ dnorm(31.14, 1/0.46^2)
-  alpha.arag.slope ~ dnorm(17.88, 1/0.13^2)
-  
   # Brine shrimp cyst slopes and intercepts, Nielson and Bowen 2010
   BScyst.slope.lw.2H ~ dnorm(0.34, 1/0.019^2)
   
@@ -243,26 +216,6 @@ model {
   scwax.alpha.sl ~ dnorm(0.00080, 1/0.00005^2) T (0.0007,0.0009)
   
   scwax.alpha.inc ~ dnorm(0.80745, 1/0.005^2) T (0.79,0.83)
-  
-  #more complicated version: use regression 
-  #use posterior of the short chain wax calibration in the calculation 
-  # scwax.alpha.sl = post.scwax.alpha.sl[indx.scwax]
-  # 
-  # scwax.alpha.inc = post.scwax.alpha.inc[indx.scwax]
-  # 
-  # scwax.slope[indx.scwax]
-  # scwax.inc[indx.scwax]
-  # indx.scwax ~ dcat(rep(1, post.leng.scwax))
-  
-  #also explore alternatives, such as all plants from mid latitudes 30 - 60 degrees Sensitivity test
-  #set up epsilon.lcwax, using , Cn-29, taken from Konecky
-  # epsilon2H.lcwax ~ dnorm(epsilon2H.lcwax.mean, 1/epsilon2H.lcwax.sd^2)
-  # epsilon2H.lcwax.mean = -121 #boreal trees, Kocecky 2019
-  # epsilon2H.lcwax.sd = 22
-  
-  #use the equation in McFarlin et al 2019, with slope and intercept, alkanes
-  # lcwax.d2H.inc ~ dnorm(-129, 1/15^2)
-  # lcwax.d2H.slope ~ dnorm(0.78, 1/0.01^2)
   
   # #use the equation in McFarlin et al 2019, with slope and intercept for n-acid
   lcwax.d2H.inc ~ dnorm(-125, 1/20^2) T(-150,-100)
@@ -415,7 +368,6 @@ model {
   
   LV[1] = interp.lin(L.level[1], GSL.level, GSL.volume) #LV.A is the real lake volume at the end of the seasonal cycle
   
-  # lake starting level: 1280 +-3 meters
   # L.level[1] ~ dnorm(1280,1/3^2) T(1276,1284)#m
   
   L.level[1] ~ dunif(1276,1284)#m
@@ -440,10 +392,8 @@ model {
   air.d18O.int ~ dnorm(d18O.vap.warm , 1/2^2)
   
   #f: fraction of advected air over lake, Tanganyika is set at 0.3, GSL is set at a slightly higher value
-  f = 0.3
-  # f ~ dbeta(20, 50)
-  # f ~ dnorm(f.mean, 1/0.05^2) T(0.2,0.4)#allow some variation, but with hard cutoffs
-  # f.mean ~ dnorm(0.3, 1/0.02^2) #~0.3 +- 0.02 rh
+  # f = 0.3
+  f ~ dbeta(20, 50)
   
   #####Lake water isotopes initial values#####
   ##convert to lake water ratios
@@ -563,15 +513,8 @@ model {
   
   nsws ~ dnorm(5.8, 1/0.5^2) T(4,7)#wind speed data from Steenburgh, 2000
   
-  #relative humidity ~0.35 +- 0.05
+  #relative humidity ~0.35
   rh ~ dbeta(40, 72) T(0.1,0.5)
-  # 
-  # rh ~ dnorm(rh.mean, 1/0.02^2) #allow some variation
-  # rh.mean ~ dnorm(0.35, 1/0.05^2) #~0.35 +- 0.05 rh
-  
-  # #NaCl, MgCl2, 
-  # salt.molar.mass = (58.44*0.7591 + 95.211*0.1092)
-  # #NaCl, MgCl2, Na2SO4, KCl
   
   #salt correction to equilibrium fractionation factors
   sal.mol.ms = (58.44*f.NaCl + 95.211*f.MgCl2)

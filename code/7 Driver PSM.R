@@ -87,9 +87,9 @@ lcwax.d2H.dat <- GSL.FAME.C28.naom$C28.avg
 
 lcwax.d2H.sd <- rep(mean(abs(diff(GSL.FAME.C28.naom$C28.avg))/2), n.lc.wax)
 
-scwax.d2H.dat <- GSL.FAME.C18.naom$C18.avg
+scwax.d2H.dat <- GSL.FAME.C16.naom$C16.avg
 
-scwax.d2H.sd <- rep(mean(abs(diff(GSL.FAME.C18.naom$C18.avg))/2), n.sc.wax) 
+scwax.d2H.sd <- rep(mean(abs(diff(GSL.FAME.C16.naom$C16.avg))/2), n.sc.wax) 
 
 BScyst.d18O.dat <- GSL.cyst$Ave.d18O
 
@@ -150,3 +150,4 @@ PSM.f = do.call(jags.parallel,list(model.file = "code/JAGS PSM full.R",
 proc.time() - t1 #8.5 hours for 1e4
 #estimated time taken: t = 129 (centenial variation), 2.3 hours for n.iter = 2e4
 
+save(PSM.f, file = "out/PSM.f.RData")
