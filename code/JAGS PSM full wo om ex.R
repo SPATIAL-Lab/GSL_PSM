@@ -143,9 +143,9 @@ model {
     #model algal cellulose d2H and d18O 
     #consider exchangable and non-exchangable H and O in cellulose
     #Filot 2006 for H isotope exchange of cellulose
-    rBSdiet.2H[i] = rprx.L.2H[i] * (epsilon.2H.carbohy/1000 + 1) * (1 - r.exH) + r.exH * rlw2H[i] * alpha.exH
+    rBSdiet.2H[i] = rprx.L.2H[i] * (epsilon.2H.carbohy/1000 + 1) #* (1 - r.exH) + r.exH * rlw2H[i] * alpha.exH
     #Cernusak 2005 for exchangeable Oxygen in cellulose
-    rBSdiet.18O[i] = rprx.L.18O[i] * (epsilon.18O.carbohy/1000 + 1) *(1 - r.exO) + r.exO * rlw18O[i] * alpha.exO
+    rBSdiet.18O[i] = rprx.L.18O[i] * (epsilon.18O.carbohy/1000 + 1) #*(1 - r.exO) + r.exO * rlw18O[i] * alpha.exO
     
     #short chain wax from proximal lake water and n-C18 acid
     rscwax.2H[i] = rprx.L.2H[i] * alpha2H.sc.alkane[i] * alpha.alk.acid
@@ -176,13 +176,13 @@ model {
   
   #cellulose exchange ratio and alpha
   
-  r.exH ~ dnorm(0.37, 1/ 0.01^2) #Nielson and Bowen 2010: slope of 0.63 for algae grown in water
-  
-  alpha.exH ~ dnorm(1.082, 1/0.014^2) #Filot et al 2006
-  
-  r.exO ~ dnorm(0.31, 1/ 0.01^2) #Nielson and Bowen 2010: slope of 0.69 for algae grown in water
-  
-  alpha.exO ~ dnorm(1.027, 1/0.001^2) #Cernusak et al 2005
+  # r.exH ~ dnorm(0.37, 1/ 0.01^2) #Nielson and Bowen 2010: slope of 0.63 for algae grown in water
+  # 
+  # alpha.exH ~ dnorm(1.082, 1/0.014^2) #Filot et al 2006
+  # 
+  # r.exO ~ dnorm(0.31, 1/ 0.01^2) #Nielson and Bowen 2010: slope of 0.69 for algae grown in water
+  # 
+  # alpha.exO ~ dnorm(1.027, 1/0.001^2) #Cernusak et al 2005
   
   # Brine shrimp cyst slopes and intercepts, Nielson and Bowen 2010
   BScyst.slope.lw.2H ~ dnorm(0.34, 1/0.019^2)

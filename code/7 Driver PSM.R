@@ -12,8 +12,17 @@ library(tidyr)
 
 setwd("C:/Users/ydmag/Google Drive/U of U/GSL proxy/GSL_PSM")
 
+source("code/1 Helper functions.R")
 
-################use synthetic data to test lake mass balance#####
+################full PSM with the following elements:#####
+#error term using 1/2 pairwise difference 
+#no covariance between LST and Ro.d18O
+#sc.wax record with n-C18
+#with proximal lake mixing
+#with d18O and d2H organic matter exchange
+#all flexible empirical relationships and epsilons
+#evaporation number: 183
+
 #age resolution
 age.res = 100 #this determins the number of time steps in the simulation
 
@@ -31,12 +40,6 @@ carb.offset = 3000
 
 #number of time steps in the simulation
 t <- ceiling(max.age/age.res) + t.avg #101 time steps + 28 for averaging
-
-#######use calibrations for short chain wax fractionation
-# post.leng.scwax <- length(post)
-# 
-# post.scwax.alpha.sl <- post
-# post.scwax.alpha.inc <- post
 
 #######compile priors#######
 
@@ -76,6 +79,8 @@ post.age.scwax <- GSL.scwax.age
 
 n.sc.wax <- ncol(GSL.scwax.age)
 
+#or use vcov & multi normal distribution 
+
 ####### compile measured data#####
 #use half pairwise difference as uncertainty around the mean#
 
@@ -87,9 +92,9 @@ lcwax.d2H.dat <- GSL.FAME.C28.naom$C28.avg
 
 lcwax.d2H.sd <- rep(mean(abs(diff(GSL.FAME.C28.naom$C28.avg))/2), n.lc.wax)
 
-scwax.d2H.dat <- GSL.FAME.C16.naom$C16.avg
+scwax.d2H.dat <- GSL.FAME.C18.naom$C18.avg
 
-scwax.d2H.sd <- rep(mean(abs(diff(GSL.FAME.C16.naom$C16.avg))/2), n.sc.wax) 
+scwax.d2H.sd <- rep(mean(abs(diff(GSL.FAME.C18.naom$C18.avg))/2), n.sc.wax) 
 
 BScyst.d18O.dat <- GSL.cyst$Ave.d18O
 
@@ -114,7 +119,7 @@ parameters <- c("L.level","rh", "nsws", "LST", "T.gap","AT","Runoff", "sal", "S.
                 "prx.sal", "prx.L.d2H", "prx.L.d18O", "f.m.ro","w.avg.carb", "w.avg.lcwax",
                 "d2H.C14d.lcwax","d18O.C14d.carb","f.C14d.carb", "f.C14d.lcwax",
                 "T.cps.slope", "sl.cpsAT.18O", "r.exO", "r.exH", "alpha.exH", "alpha.exO",
-                "epsilon.alk.acid","LST.pre","tl")
+                "epsilon.alk.acid","LST.pre","tl","ind.dep","n.d.evap")
 
 
 dat = list(GSL.level = GSL.level.1286, GSL.area = GSL.area.1286, 
@@ -127,7 +132,7 @@ dat = list(GSL.level = GSL.level.1286, GSL.area = GSL.area.1286,
            d18O.car.dat = d18O.car.dat, lcwax.d2H.dat = lcwax.d2H.dat, 
            post.age.scwax = post.age.scwax, post.age.lcwax = post.age.lcwax,
            scwax.d2H.dat = scwax.d2H.dat, BScyst.d18O.dat = BScyst.d18O.dat, 
-           BScyst.d2H.dat = BScyst.d2H.dat,
+           BScyst.d2H.dat = BScyst.d2H.dat, 
            d18O.car.sd = d18O.car.sd, lcwax.d2H.sd = lcwax.d2H.sd, 
            scwax.d2H.sd = scwax.d2H.sd, BScyst.d18O.sd = BScyst.d18O.sd, 
            BScyst.d2H.sd = BScyst.d2H.sd, t.avg=t.avg, carb.offset= carb.offset, lcwax.offset=lcwax.offset)
@@ -136,9 +141,9 @@ dat = list(GSL.level = GSL.level.1286, GSL.area = GSL.area.1286,
 t1 = proc.time()
 
 set.seed(t1[3])
-n.iter = 1e4
-n.burnin = 5e3
-n.thin = 5
+n.iter = 1.5e4
+n.burnin = 8e3
+n.thin = 7
 
 #Run it
 PSM.f = do.call(jags.parallel,list(model.file = "code/JAGS PSM full.R", 
@@ -151,3 +156,204 @@ proc.time() - t1 #8.5 hours for 1e4
 #estimated time taken: t = 129 (centenial variation), 2.3 hours for n.iter = 2e4
 
 save(PSM.f, file = "out/PSM.f.RData")
+
+write.csv(PSM.f$BUGSoutput$summary, "out/PSM_f_sum.csv")
+
+PSM.f$BUGSoutput$summary
+
+par(mfrow=c(3,3))
+#check relative humidity
+plot(density(PSM.f$BUGSoutput$sims.list$rh),main="RH") #getting low
+
+#check advection coefficient
+plot(density(PSM.f$BUGSoutput$sims.list$f),main="F convection") #
+
+#check wind speed
+plot(density(PSM.f$BUGSoutput$sims.list$nsws),main="Wind") #normal
+
+#check LST ac
+plot(density(PSM.f$BUGSoutput$sims.list$LST.pre),main="LST pre") #very high!
+
+#check Ro ac
+plot(density(PSM.f$BUGSoutput$sims.list$Ro.d18O.cps),main="Ro ac")
+
+#check atm vapor d18O
+plot(density(PSM.f$BUGSoutput$sims.list$air.d18O),main="Atm d18O") 
+abline(v=d18O.vap.warm)
+
+# check brine shrimp cyst intercept
+plot(density(PSM.f$BUGSoutput$sims.list$BScyst.inc.2H),main="Cyst d2H interc")
+abline(v=-92) #ok
+
+#check brine shrimp cyst slopes
+plot(density(PSM.f$BUGSoutput$sims.list$BScyst.slope.lw.2H),main="Cyst lw d2H slope")
+abline(v=0.34) #ok
+
+#check brine shrimp cyst intercept
+plot(density(PSM.f$BUGSoutput$sims.list$BScyst.slope.diet.2H),main="Cyst diet d2H slope")
+abline(v=0.26) #0.2
+
+#check brine shrimp cyst intercept
+plot(density(PSM.f$BUGSoutput$sims.list$BScyst.inc.18O),main="Cyst d18O interc")
+abline(v=15.9)#ok
+#check brine shrimp cyst slopes
+plot(density(PSM.f$BUGSoutput$sims.list$BScyst.slope.lw.18O),main="Cyst lw d18O slope")
+abline(v=0.692)#ok
+#check brine shrimp cyst intercept
+plot(density(PSM.f$BUGSoutput$sims.list$BScyst.slope.diet.18O),main="Cyst diet d18O slope")
+abline(v=0.101)#ok
+
+plot(density(PSM.f$BUGSoutput$sims.list$d2H.gap.MAP_Ro),main="MAP Ro gap") 
+abline(v=45)
+
+#epsilon BS diet (smaller than pure algea, means that there is trophic enrichment?)
+plot(density(PSM.f$BUGSoutput$sims.list$epsilon.2H.carbohy),main="2H carbohy ep") 
+abline(v=-100)#likely a mixture of both algae and terrestrial/wetland POM
+
+plot(density(PSM.f$BUGSoutput$sims.list$epsilon.18O.carbohy),main="18O carbohy ep") 
+abline(v=27) #much lower for d18O!
+
+plot(density(PSM.f$BUGSoutput$sims.list$lcwax.d2H.inc),main="lc MAP inc") 
+abline(v=-125) #much smaller than -129, at -115!, mixing with a -170 per mil source?
+
+plot(density(PSM.f$BUGSoutput$sims.list$lcwax.d2H.slope),main="lc MAP slope")
+abline(v=0.62) #0.76
+
+plot(density(PSM.f$BUGSoutput$sims.list$scwax.alpha.sl),main="sc alpha slope")
+abline(v=0.0008)#0.0009
+
+plot(density(PSM.f$BUGSoutput$sims.list$scwax.alpha.inc),main="sc alpha interc")
+abline(v=0.80745) # Consider make this fixed
+#Or remove this relationship!
+
+plot(density(PSM.f$BUGSoutput$sims.list$f.m.ro),main="f.m.ro") #more like 0.4
+abline(v=0.2) 
+
+plot(density(PSM.f$BUGSoutput$sims.list$f.C14d.carb),main="f.C14d.carb") #ok
+abline(v=0.05) 
+
+plot(density(PSM.f$BUGSoutput$sims.list$f.C14d.lcwax),main="f.C14d.lcwax") #ok
+abline(v=0.01) 
+
+plot(density(PSM.f$BUGSoutput$sims.list$epsilon.alk.acid),main="epsilon.alk.acid") #ok
+abline(v=25)
+
+plot(density(PSM.f$BUGSoutput$sims.list$T.cps.slope), main="T.cps.slope")
+
+plot(density(PSM.f$BUGSoutput$sims.list$tl), main="Date aligned")
+plot(density(PSM.f$BUGSoutput$sims.list$n.d.evap), main="n.d.evap")
+
+PSM.f.scalpha <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$alpha2H.sc.alkane,0.89)
+plot(t:1*age.res, PSM.f.scalpha[[1]],type="l",ylim=c(0.8,1), main="sc alpha")
+lines(t:1*age.res,PSM.f.scalpha[[2]],lty=2)
+lines(t:1*age.res,PSM.f.scalpha[[3]],lty=2)
+
+PSM.f.prx.sal <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$prx.sal,0.89)
+plot(t:1*age.res, PSM.f.prx.sal[[1]],type="l",ylim=c(0,200), main="pre sal")
+lines(t:1*age.res,PSM.f.prx.sal[[2]],lty=2)
+lines(t:1*age.res,PSM.f.prx.sal[[3]],lty=2)
+
+PSM.f.prx.L.d2H <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$prx.L.d2H,0.89)
+plot(t:1*age.res, PSM.f.prx.L.d2H[[1]],type="l",ylim=c(-150,0), main="prx L d2H")
+lines(t:1*age.res,PSM.f.prx.L.d2H[[2]],lty=2)
+lines(t:1*age.res,PSM.f.prx.L.d2H[[3]],lty=2)
+
+#check LST
+PSM.f.LST <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$LST,0.89)
+plot(t:1*age.res,PSM.f.LST[[1]],type="l",ylim=c(0,25), main="LST")
+lines(t:1*age.res,PSM.f.LST[[2]],lty=2)
+lines(t:1*age.res,PSM.f.LST[[3]],lty=2)
+#by far, temperature has the least constraint, still too high!
+
+#check AT
+PSM.f.AT <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$AT,0.89)
+plot(t:1*age.res,PSM.f.AT[[1]],type="l",ylim=c(0,25), main="AT")
+lines(t:1*age.res,PSM.f.AT[[2]],lty=2)
+lines(t:1*age.res,PSM.f.AT[[3]],lty=2)
+
+#check Runoff and evaporation
+PSM.f.Runoff <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$Runoff,0.89)
+plot(t:1*age.res,PSM.f.Runoff[[1]],type="l",ylim=c(0,12), main="Runoff and Evap")
+lines(t:1*age.res,PSM.f.Runoff[[2]],lty=2)
+lines(t:1*age.res,PSM.f.Runoff[[3]],lty=2)
+
+#check evaporation
+PSM.f.Evap <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$Evap,0.89)
+lines(t:1*age.res,PSM.f.Evap[[1]],col="red")
+lines(t:1*age.res,PSM.f.Evap[[2]],lty=2,col="red")
+lines(t:1*age.res,PSM.f.Evap[[3]],lty=2,col="red")
+
+#check evaporation rate
+PSM.f.Evaprate <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$E.rate,0.89)
+plot(t:1*age.res,PSM.f.Evaprate[[1]],type="l",main="Evap rate", ylim=c(0,2))
+lines(t:1*age.res,PSM.f.Evaprate[[2]],lty=2)
+lines(t:1*age.res,PSM.f.Evaprate[[3]],lty=2)
+
+#check lake level
+PSM.f.L.level <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$L.level,0.89)
+plot(t:1*age.res,PSM.f.L.level[[1]],type="l",ylim=c(1276,1286), main="Lake level")
+lines(t:1*age.res,PSM.f.L.level[[2]],lty=2)
+lines(t:1*age.res,PSM.f.L.level[[3]],lty=2)
+
+#check salinity
+PSM.f.sal <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$sal,0.89)
+plot(t:1*age.res,PSM.f.sal[[1]],type="l",ylim=c(50,360), main="salinity")
+lines(t:1*age.res,PSM.f.sal[[2]],lty=2)
+lines(t:1*age.res,PSM.f.sal[[3]],lty=2)
+
+#check runoff isotopes
+PSM.f.Rod18O <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$Ro.d18O,0.89)
+plot(t:1*age.res,PSM.f.Rod18O[[1]],type="l",ylim=c(-25,-10), main="Runoff d18O")
+lines(t:1*age.res,PSM.f.Rod18O[[2]],lty=2)
+lines(t:1*age.res,PSM.f.Rod18O[[3]],lty=2)
+
+PSM.f.Rod2H <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$Ro.d2H,0.89)
+plot(t:1*age.res,PSM.f.Rod2H[[1]],type="l",ylim=c(-180,-80), main="Runoff d2H")
+lines(t:1*age.res,PSM.f.Rod2H[[2]],lty=2)
+lines(t:1*age.res,PSM.f.Rod2H[[3]],lty=2)
+
+#check evaporation isotopes
+PSM.f.evap.d18O <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$evap.d18O,0.89)
+plot(t:1*age.res,PSM.f.evap.d18O[[1]],type="l",ylim=c(-25,-10), main="Evap d18O")
+lines(t:1*age.res,PSM.f.evap.d18O[[2]],lty=2)
+lines(t:1*age.res,PSM.f.evap.d18O[[3]],lty=2)
+
+PSM.f.evap.d2H <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$evap.d2H,0.89)
+plot(t:1*age.res,PSM.f.evap.d2H[[1]],type="l",ylim=c(-180,-80), main="Evap d2H")
+lines(t:1*age.res,PSM.f.evap.d2H[[2]],lty=2)
+lines(t:1*age.res,PSM.f.evap.d2H[[3]],lty=2)
+
+#check lake water isotopes
+PSM.f.Lw.d18O <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$Lw.d18O,0.89)
+plot(t:1*age.res,PSM.f.Lw.d18O[[1]],type="l",ylim=c(-10,0), main="Lake water d18O")
+lines(t:1*age.res,PSM.f.Lw.d18O[[2]],lty=2)
+lines(t:1*age.res,PSM.f.Lw.d18O[[3]],lty=2)
+
+PSM.f.Lw.d2H <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$Lw.d2H,0.89)
+plot(t:1*age.res,PSM.f.Lw.d2H[[1]],type="l",ylim=c(-100,0), main="Lake water d2H")
+lines(t:1*age.res,PSM.f.Lw.d2H[[2]],lty=2)
+lines(t:1*age.res,PSM.f.Lw.d2H[[3]],lty=2)
+
+#check the gap between runoff d2H and lake water d2H
+PSM.f.Rod2H <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$Ro.d2H,0.89)
+PSM.f.Lw.d2H<- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$Lw.d2H,0.89)
+plot(t:1*age.res,PSM.f.Rod2H[[1]],type="l",ylim=c(-200,0), main="Runoff vs lake d2H")
+lines(t:1*age.res,PSM.f.Lw.d2H[[1]],col="green",lwd =2)
+
+
+plot(PSM.f.Lw.d18O[[1]],PSM.f.Lw.d2H[[1]],xlim=c(-25,5),ylim=c(-200,20))
+abline(a=Lw.intc, b=Lw.slope) #ok
+#check meteoric line
+points(PSM.f.Rod18O[[1]],PSM.f.Rod2H[[1]])
+abline(a=MWL.intc, b=MWL.slope)
+points(PSM.f.evap.d18O[[1]],PSM.f.evap.d2H[[1]],col="red")
+
+PSM.f.w.carb <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$w.avg.carb,0.89)
+plot(1:t.avg -1,PSM.f.w.carb[[1]],type="l", main="carbonate weights")
+lines(1:t.avg -1,PSM.f.w.carb[[2]],lty=2)
+lines(1:t.avg -1,PSM.f.w.carb[[3]],lty=2)
+
+PSM.f.w.lcwax <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$w.avg.lcwax,0.89)
+plot(1:t.avg -1,PSM.f.w.lcwax[[1]],type="l", main="lc wax weights")
+lines(1:t.avg -1,PSM.f.w.lcwax[[2]],lty=2)
+lines(1:t.avg -1,PSM.f.w.lcwax[[3]],lty=2)
