@@ -25,7 +25,7 @@ C16 <- 16
 GSL.FAME.C16.corr <- GSL.FAME.C16 %>% 
   mutate(d2H.corr = (d2H * (2 * C16 + 2) - 3 * d2H.meOH)/(2 * C16 - 1))
 
-#calculate mean and sd of the 3 repeats 
+#aggregate data by depth
 GSL.FAME.C16.summ <- GSL.FAME.C16.corr%>% group_by(Depth_cm) %>%
   summarize(C16.avg = mean(d2H.corr),C16.sd = sd(d2H.corr),PA.16 = mean(area2+area3))
 
@@ -39,7 +39,7 @@ C18 <- 18
 GSL.FAME.C18.corr <- GSL.FAME.C18 %>% 
   mutate(d2H.corr = (d2H * (2 * C18 + 2) - 3 * d2H.meOH)/(2 * C18 - 1))
 
-#calculate mean and sd of the 3 repeats 
+#aggregate data by depth 
 GSL.FAME.C18.summ <- GSL.FAME.C18.corr%>% group_by(Depth_cm) %>%
   summarize(C18.avg = mean(d2H.corr),C18.sd = sd(d2H.corr),PA.18 = mean(area2+area3))
 
@@ -53,7 +53,7 @@ C28 <- 28
 GSL.FAME.C28.corr <- GSL.FAME.C28 %>% 
   mutate(d2H.corr = (d2H * (2 * C28 + 2) - 3 * d2H.meOH)/(2 * C28 - 1))
 
-#calculate mean and sd of the 3 repeats 
+#aggregate data by depth
 GSL.FAME.C28.summ <- GSL.FAME.C28.corr%>% group_by(Depth_cm) %>%
   summarize(C28.avg = mean(d2H.corr),C28.sd = sd(d2H.corr),PA.28 = mean(area2+area3))
 
