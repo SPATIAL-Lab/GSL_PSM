@@ -1778,177 +1778,177 @@ PSM.evapd.we$BUGSoutput$summary
 
 par(mfrow=c(3,3))
 #check relative humidity
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$rh),main="RH") #getting low
+plot(density(PSM.Tcov$BUGSoutput$sims.list$rh),main="RH") #getting low
 
 #check advection coefficient
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$f),main="F convection") #
+plot(density(PSM.Tcov$BUGSoutput$sims.list$f),main="F convection") #
 
 #check wind speed
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$nsws),main="Wind") #normal
+plot(density(PSM.Tcov$BUGSoutput$sims.list$nsws),main="Wind") #normal
 
 #check LST ac
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$LST.pre),main="LST pre") #very high!
+plot(density(PSM.Tcov$BUGSoutput$sims.list$LST.pre),main="LST pre") #very high!
 
 #check Ro ac
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$Ro.d18O.cps),main="Ro ac")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$Ro.d18O.cps),main="Ro ac")
 
 #check atm vapor d18O
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$air.d18O),main="Atm d18O") 
+plot(density(PSM.Tcov$BUGSoutput$sims.list$air.d18O),main="Atm d18O") 
 abline(v=d18O.vap.warm)
 
 # check brine shrimp cyst intercept
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$BScyst.inc.2H),main="Cyst d2H interc")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$BScyst.inc.2H),main="Cyst d2H interc")
 abline(v=-92) #ok
 
 #check brine shrimp cyst slopes
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$BScyst.slope.lw.2H),main="Cyst lw d2H slope")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$BScyst.slope.lw.2H),main="Cyst lw d2H slope")
 abline(v=0.34) #ok
 
 #check brine shrimp cyst intercept
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$BScyst.slope.diet.2H),main="Cyst diet d2H slope")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$BScyst.slope.diet.2H),main="Cyst diet d2H slope")
 abline(v=0.26) #0.2
 
 #check brine shrimp cyst intercept
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$BScyst.inc.18O),main="Cyst d18O interc")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$BScyst.inc.18O),main="Cyst d18O interc")
 abline(v=15.9)#ok
 #check brine shrimp cyst slopes
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$BScyst.slope.lw.18O),main="Cyst lw d18O slope")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$BScyst.slope.lw.18O),main="Cyst lw d18O slope")
 abline(v=0.692)#ok
 #check brine shrimp cyst intercept
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$BScyst.slope.diet.18O),main="Cyst diet d18O slope")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$BScyst.slope.diet.18O),main="Cyst diet d18O slope")
 abline(v=0.101)#ok
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$d2H.gap.MAP_Ro),main="MAP Ro gap") 
+plot(density(PSM.Tcov$BUGSoutput$sims.list$d2H.gap.MAP_Ro),main="MAP Ro gap") 
 abline(v=45)
 
 #epsilon BS diet (smaller than pure algea, means that there is trophic enrichment?)
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$epsilon.2H.carbohy),main="2H carbohy ep") 
+plot(density(PSM.Tcov$BUGSoutput$sims.list$epsilon.2H.carbohy),main="2H carbohy ep") 
 abline(v=-100)#likely a mixture of both algae and terrestrial/wetland POM
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$epsilon.18O.carbohy),main="18O carbohy ep") 
+plot(density(PSM.Tcov$BUGSoutput$sims.list$epsilon.18O.carbohy),main="18O carbohy ep") 
 abline(v=27) #much lower for d18O!
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$lcwax.d2H.inc),main="lc MAP inc") 
+plot(density(PSM.Tcov$BUGSoutput$sims.list$lcwax.d2H.inc),main="lc MAP inc") 
 abline(v=-125) #much smaller than -129, at -115!, mixing with a -170 per mil source?
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$lcwax.d2H.slope),main="lc MAP slope")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$lcwax.d2H.slope),main="lc MAP slope")
 abline(v=0.62) #0.76
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$scwax.alpha.sl),main="sc alpha slope")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$scwax.alpha.sl),main="sc alpha slope")
 abline(v=0.0008)#0.0009
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$scwax.alpha.inc),main="sc alpha interc")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$scwax.alpha.inc),main="sc alpha interc")
 abline(v=0.80745) # Consider make this fixed
 #Or remove this relationship!
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$f.m.ro),main="f.m.ro") #more like 0.4
+plot(density(PSM.Tcov$BUGSoutput$sims.list$f.m.ro),main="f.m.ro") #more like 0.4
 abline(v=0.2) 
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$f.C14d.carb),main="f.C14d.carb") #ok
+plot(density(PSM.Tcov$BUGSoutput$sims.list$f.C14d.carb),main="f.C14d.carb") #ok
 abline(v=0.05) 
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$f.C14d.lcwax),main="f.C14d.lcwax") #ok
+plot(density(PSM.Tcov$BUGSoutput$sims.list$f.C14d.lcwax),main="f.C14d.lcwax") #ok
 abline(v=0.01) 
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$epsilon.alk.acid),main="epsilon.alk.acid") #ok
+plot(density(PSM.Tcov$BUGSoutput$sims.list$epsilon.alk.acid),main="epsilon.alk.acid") #ok
 abline(v=25)
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$T.cps.slope), main="T.cps.slope")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$T.cps.slope), main="T.cps.slope")
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$tl), main="Date aligned")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$tl), main="Date aligned")
 
-plot(density(PSM.evapd.we$BUGSoutput$sims.list$n.d.evap), main="n.d.evap")
+plot(density(PSM.Tcov$BUGSoutput$sims.list$n.d.evap), main="n.d.evap")
 
-PSM.evapd.we.scalpha <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$alpha2H.sc.alkane,0.89)
-plot(t:1*age.res, PSM.evapd.we.scalpha[[1]],type="l",ylim=c(0.8,1), main="sc alpha")
-lines(t:1*age.res,PSM.evapd.we.scalpha[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.scalpha[[3]],lty=2)
+PSM.Tcov.scalpha <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$alpha2H.sc.alkane,0.89)
+plot(t:1*age.res, PSM.Tcov.scalpha[[1]],type="l",ylim=c(0.8,1), main="sc alpha")
+lines(t:1*age.res,PSM.Tcov.scalpha[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.scalpha[[3]],lty=2)
 
-PSM.evapd.we.prx.sal <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$prx.sal,0.89)
-plot(t:1*age.res, PSM.evapd.we.prx.sal[[1]],type="l",ylim=c(0,200), main="pre sal")
-lines(t:1*age.res,PSM.evapd.we.prx.sal[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.prx.sal[[3]],lty=2)
+PSM.Tcov.prx.sal <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$prx.sal,0.89)
+plot(t:1*age.res, PSM.Tcov.prx.sal[[1]],type="l",ylim=c(0,200), main="pre sal")
+lines(t:1*age.res,PSM.Tcov.prx.sal[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.prx.sal[[3]],lty=2)
 
-PSM.evapd.we.prx.L.d2H <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$prx.L.d2H,0.89)
-plot(t:1*age.res, PSM.evapd.we.prx.L.d2H[[1]],type="l",ylim=c(-150,0), main="prx L d2H")
-lines(t:1*age.res,PSM.evapd.we.prx.L.d2H[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.prx.L.d2H[[3]],lty=2)
+PSM.Tcov.prx.L.d2H <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$prx.L.d2H,0.89)
+plot(t:1*age.res, PSM.Tcov.prx.L.d2H[[1]],type="l",ylim=c(-150,0), main="prx L d2H")
+lines(t:1*age.res,PSM.Tcov.prx.L.d2H[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.prx.L.d2H[[3]],lty=2)
 
 #check LST
-PSM.evapd.we.LST <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$LST,0.89)
-plot(t:1*age.res,PSM.evapd.we.LST[[1]],type="l",ylim=c(15,30), main="LST")
-lines(t:1*age.res,PSM.evapd.we.LST[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.LST[[3]],lty=2)
+PSM.Tcov.LST <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$LST,0.89)
+plot(t:1*age.res,PSM.Tcov.LST[[1]],type="l",ylim=c(5,30), main="LST")
+lines(t:1*age.res,PSM.Tcov.LST[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.LST[[3]],lty=2)
 #by far, temperature has the least constraint, still too high!
 
 #check AT
-PSM.evapd.we.AT <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$AT,0.89)
-plot(t:1*age.res,PSM.evapd.we.AT[[1]],type="l",ylim=c(20,40), main="AT")
-lines(t:1*age.res,PSM.evapd.we.AT[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.AT[[3]],lty=2)
+PSM.Tcov.AT <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$AT,0.89)
+plot(t:1*age.res,PSM.Tcov.AT[[1]],type="l",ylim=c(20,40), main="AT")
+lines(t:1*age.res,PSM.Tcov.AT[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.AT[[3]],lty=2)
 
 #check Runoff and evaporation
-PSM.evapd.we.Runoff <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$Runoff,0.89)
-plot(t:1*age.res,PSM.evapd.we.Runoff[[1]],type="l",ylim=c(0,12), main="Runoff and Evap")
-lines(t:1*age.res,PSM.evapd.we.Runoff[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.Runoff[[3]],lty=2)
+PSM.Tcov.Runoff <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$Runoff,0.89)
+plot(t:1*age.res,PSM.Tcov.Runoff[[1]],type="l",ylim=c(0,12), main="Runoff and Evap")
+lines(t:1*age.res,PSM.Tcov.Runoff[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.Runoff[[3]],lty=2)
 
 #check evaporation
-PSM.evapd.we.Evap <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$Evap,0.89)
-lines(t:1*age.res,PSM.evapd.we.Evap[[1]],col="red")
-lines(t:1*age.res,PSM.evapd.we.Evap[[2]],lty=2,col="red")
-lines(t:1*age.res,PSM.evapd.we.Evap[[3]],lty=2,col="red")
+PSM.Tcov.Evap <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$Evap,0.89)
+lines(t:1*age.res,PSM.Tcov.Evap[[1]],col="red")
+lines(t:1*age.res,PSM.Tcov.Evap[[2]],lty=2,col="red")
+lines(t:1*age.res,PSM.Tcov.Evap[[3]],lty=2,col="red")
 
 #check evaporation rate
-PSM.evapd.we.Evaprate <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$E.rate,0.89)
-plot(t:1*age.res,PSM.evapd.we.Evaprate[[1]],type="l",main="Evap rate", ylim=c(0,2))
-lines(t:1*age.res,PSM.evapd.we.Evaprate[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.Evaprate[[3]],lty=2)
+PSM.Tcov.Evaprate <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$E.rate,0.89)
+plot(t:1*age.res,PSM.Tcov.Evaprate[[1]],type="l",main="Evap rate", ylim=c(0,2))
+lines(t:1*age.res,PSM.Tcov.Evaprate[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.Evaprate[[3]],lty=2)
 
 #check lake level
-PSM.evapd.we.L.level <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$L.level,0.89)
-plot(t:1*age.res,PSM.evapd.we.L.level[[1]],type="l",ylim=c(1276,1286), main="Lake level")
-lines(t:1*age.res,PSM.evapd.we.L.level[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.L.level[[3]],lty=2)
+PSM.Tcov.L.level <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$L.level,0.89)
+plot(t:1*age.res,PSM.Tcov.L.level[[1]],type="l",ylim=c(1276,1286), main="Lake level")
+lines(t:1*age.res,PSM.Tcov.L.level[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.L.level[[3]],lty=2)
 
 #check salinity
-PSM.evapd.we.sal <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$sal,0.89)
-plot(t:1*age.res,PSM.evapd.we.sal[[1]],type="l",ylim=c(50,360), main="salinity")
-lines(t:1*age.res,PSM.evapd.we.sal[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.sal[[3]],lty=2)
+PSM.Tcov.sal <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$sal,0.89)
+plot(t:1*age.res,PSM.Tcov.sal[[1]],type="l",ylim=c(50,360), main="salinity")
+lines(t:1*age.res,PSM.Tcov.sal[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.sal[[3]],lty=2)
 
 #check runoff isotopes
-PSM.evapd.we.Rod18O <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$Ro.d18O,0.89)
-plot(t:1*age.res,PSM.evapd.we.Rod18O[[1]],type="l",ylim=c(-25,-10), main="Runoff d18O")
-lines(t:1*age.res,PSM.evapd.we.Rod18O[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.Rod18O[[3]],lty=2)
+PSM.Tcov.Rod18O <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$Ro.d18O,0.89)
+plot(t:1*age.res,PSM.Tcov.Rod18O[[1]],type="l",ylim=c(-25,-10), main="Runoff d18O")
+lines(t:1*age.res,PSM.Tcov.Rod18O[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.Rod18O[[3]],lty=2)
 
-PSM.evapd.we.Rod2H <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$Ro.d2H,0.89)
-plot(t:1*age.res,PSM.evapd.we.Rod2H[[1]],type="l",ylim=c(-180,-80), main="Runoff d2H")
-lines(t:1*age.res,PSM.evapd.we.Rod2H[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.Rod2H[[3]],lty=2)
+PSM.Tcov.Rod2H <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$Ro.d2H,0.89)
+plot(t:1*age.res,PSM.Tcov.Rod2H[[1]],type="l",ylim=c(-180,-80), main="Runoff d2H")
+lines(t:1*age.res,PSM.Tcov.Rod2H[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.Rod2H[[3]],lty=2)
 
 #check evaporation isotopes
-PSM.evapd.we.evap.d18O <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$evap.d18O,0.89)
-plot(t:1*age.res,PSM.evapd.we.evap.d18O[[1]],type="l",ylim=c(-25,-10), main="Evap d18O")
-lines(t:1*age.res,PSM.evapd.we.evap.d18O[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.evap.d18O[[3]],lty=2)
+PSM.Tcov.evap.d18O <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$evap.d18O,0.89)
+plot(t:1*age.res,PSM.Tcov.evap.d18O[[1]],type="l",ylim=c(-25,-10), main="Evap d18O")
+lines(t:1*age.res,PSM.Tcov.evap.d18O[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.evap.d18O[[3]],lty=2)
 
-PSM.evapd.we.evap.d2H <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$evap.d2H,0.89)
-plot(t:1*age.res,PSM.evapd.we.evap.d2H[[1]],type="l",ylim=c(-180,-80), main="Evap d2H")
-lines(t:1*age.res,PSM.evapd.we.evap.d2H[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.evap.d2H[[3]],lty=2)
+PSM.Tcov.evap.d2H <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$evap.d2H,0.89)
+plot(t:1*age.res,PSM.Tcov.evap.d2H[[1]],type="l",ylim=c(-180,-80), main="Evap d2H")
+lines(t:1*age.res,PSM.Tcov.evap.d2H[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.evap.d2H[[3]],lty=2)
 
 #check lake water isotopes
-PSM.evapd.we.Lw.d18O <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$Lw.d18O,0.89)
-plot(t:1*age.res,PSM.evapd.we.Lw.d18O[[1]],type="l",ylim=c(-10,0), main="Lake water d18O")
-lines(t:1*age.res,PSM.evapd.we.Lw.d18O[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.Lw.d18O[[3]],lty=2)
+PSM.Tcov.Lw.d18O <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$Lw.d18O,0.89)
+plot(t:1*age.res,PSM.Tcov.Lw.d18O[[1]],type="l",ylim=c(-10,0), main="Lake water d18O")
+lines(t:1*age.res,PSM.Tcov.Lw.d18O[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.Lw.d18O[[3]],lty=2)
 
-PSM.evapd.we.Lw.d2H <- MCMC.CI.bound(PSM.evapd.we$BUGSoutput$sims.list$Lw.d2H,0.89)
-plot(t:1*age.res,PSM.evapd.we.Lw.d2H[[1]],type="l",ylim=c(-100,0), main="Lake water d2H")
-lines(t:1*age.res,PSM.evapd.we.Lw.d2H[[2]],lty=2)
-lines(t:1*age.res,PSM.evapd.we.Lw.d2H[[3]],lty=2)
+PSM.Tcov.Lw.d2H <- MCMC.CI.bound(PSM.Tcov$BUGSoutput$sims.list$Lw.d2H,0.89)
+plot(t:1*age.res,PSM.Tcov.Lw.d2H[[1]],type="l",ylim=c(-100,0), main="Lake water d2H")
+lines(t:1*age.res,PSM.Tcov.Lw.d2H[[2]],lty=2)
+lines(t:1*age.res,PSM.Tcov.Lw.d2H[[3]],lty=2)
 
 plot(PSM.evapd.we.Lw.d18O[[1]],PSM.evapd.we.Lw.d2H[[1]],xlim=c(-25,5),ylim=c(-200,20))
 abline(a=Lw.intc, b=Lw.slope) #ok
