@@ -47,8 +47,8 @@ t <- ceiling(max.age/age.res) + t.avg #101 time steps + 28 for averaging
 MWL.slope <- GSL.precip.mwl[1]
 MWL.intc <- GSL.precip.mwl[2]
 
-V.intc <- GSL.Vapor.warm.mwl[1]
-V.slope <- GSL.Vapor.warm.mwl[2]
+V.slope <- GSL.Vapor.warm.mwl[1]
+V.intc <- GSL.Vapor.warm.mwl[2]
 
 Lw.slope <- GSL.lake.mwl[1]
 Lw.intc <- GSL.lake.mwl[2]
@@ -119,7 +119,7 @@ parameters <- c("L.level","rh", "nsws", "LST", "T.gap","AT","Runoff", "sal", "S.
                 "prx.sal", "prx.L.d2H", "prx.L.d18O", "f.m.ro","w.avg.carb", "w.avg.lcwax",
                 "d2H.C14d.lcwax","d18O.C14d.carb","f.C14d.carb", "f.C14d.lcwax",
                 "T.cps.slope", "sl.cpsAT.18O", "r.exO", "r.exH", "alpha.exH", "alpha.exO",
-                "epsilon.alk.acid","LST.pre","tl","ind.dep","n.d.evap")
+                "epsilon.alk.acid","LST.pre","tl","n.d.evap")
 
 
 dat = list(GSL.level = GSL.level.1286, GSL.area = GSL.area.1286, 
@@ -260,14 +260,14 @@ lines(t:1*age.res,PSM.f.prx.L.d2H[[3]],lty=2)
 
 #check LST
 PSM.f.LST <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$LST,0.89)
-plot(t:1*age.res,PSM.f.LST[[1]],type="l",ylim=c(0,25), main="LST")
+plot(t:1*age.res,PSM.f.LST[[1]],type="l",ylim=c(10,35), main="LST")
 lines(t:1*age.res,PSM.f.LST[[2]],lty=2)
 lines(t:1*age.res,PSM.f.LST[[3]],lty=2)
 #by far, temperature has the least constraint, still too high!
 
 #check AT
 PSM.f.AT <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$AT,0.89)
-plot(t:1*age.res,PSM.f.AT[[1]],type="l",ylim=c(0,25), main="AT")
+plot(t:1*age.res,PSM.f.AT[[1]],type="l",ylim=c(20,45), main="AT")
 lines(t:1*age.res,PSM.f.AT[[2]],lty=2)
 lines(t:1*age.res,PSM.f.AT[[3]],lty=2)
 
@@ -357,3 +357,17 @@ PSM.f.w.lcwax <- MCMC.CI.bound(PSM.f$BUGSoutput$sims.list$w.avg.lcwax,0.89)
 plot(1:t.avg -1,PSM.f.w.lcwax[[1]],type="l", main="lc wax weights")
 lines(1:t.avg -1,PSM.f.w.lcwax[[2]],lty=2)
 lines(1:t.avg -1,PSM.f.w.lcwax[[3]],lty=2)
+
+
+##############plots#############
+par(mfrow=c(1,1))
+plot(GSL.carb$Depth, GSL.carb$Ave.d18O,type="l",col = "blue", ylim=c(-9,19))
+lines(GSL.cyst$Depth, GSL.cyst$Ave.d18O,col="green")
+
+plot(GSL.cyst$Depth, GSL.cyst$Ave.d2H,type="l",col = "blue", ylim=c(-200,-100))
+lines(GSL.FAME.C18.summ$Depth_cm, GSL.FAME.C18.summ$C18.avg,col="green")
+
+plot(GSL.cyst$Depth, GSL.cyst$Ave.d2H,type="l",col = "blue", ylim=c(-200,-100))
+lines(GSL.FAME.C28.summ$Depth_cm, GSL.FAME.C28.summ$C28.avg,col="green")
+
+plot(GSL.carb$Depth, GSL.carb$Ave.d13C,type="l",col = "blue", ylim=c(-60,10)) #carbonate d13C: source of DIC terrestrial vs lacustrine

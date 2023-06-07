@@ -36,22 +36,3 @@ GSL.cyst$Depth
 GSL.cyst.age <- sapply(GSL.cyst$Depth,Bacon.Age.d)
 
 dim(GSL.cyst.age) #row = iteration, col = depths
-
-#preliminary plots
-par(mfrow=c(1,1))
-plot(GSL.carb$Depth, GSL.carb$Ave.d18O,type="l",col = "blue", ylim=c(-9,19))
-lines(GSL.cyst$Depth, GSL.cyst$Ave.d18O,col="green")
-
-plot(GSL.cyst$Depth, GSL.cyst$Ave.d2H,type="l",col = "blue", ylim=c(-200,-100))
-lines(GSL.alk.C17.summ$Depth_cm, GSL.alk.C17.summ$avg,col="green")
-
-plot(GSL.cyst$Depth, GSL.cyst$Ave.d2H,type="l",col = "blue", ylim=c(-200,-100))
-lines(GSL.alk.C19.summ$Depth_cm, GSL.alk.C19.summ$avg,col="green")
-
-plot(GSL.cyst$Depth, GSL.cyst$Ave.d2H,type="l",col = "blue", ylim=c(-220,-100))
-lines(GSL.alk.C25.summ$Depth_cm, GSL.alk.C25.summ$avg,col="green")
-
-plot(GSL.carb$Depth, GSL.carb$Ave.d13C,type="l",col = "blue", ylim=c(-60,10)) #carbonate d13C: source of DIC terrestrial vs lacustrine
-#carbon used as runoff indicator? Erossion of old carbon
-#but oxygen record doesn't make sense!
-lines(GSL.alk.C25.summ$Depth_cm, GSL.alk.C25.summ$avg-GSL.alk.C17.summ$avg,col="green")
