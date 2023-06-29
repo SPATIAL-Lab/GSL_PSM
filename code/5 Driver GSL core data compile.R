@@ -36,3 +36,21 @@ GSL.cyst$Depth
 GSL.cyst.age <- sapply(GSL.cyst$Depth,Bacon.Age.d)
 
 dim(GSL.cyst.age) #row = iteration, col = depths
+
+#calculate accumulation rate at cyst depths
+
+
+acc.rate.cyst <- rep(0, length(GSL.cyst$Depth))
+for(i in 1:length(GSL.cyst$Depth)){
+  acc.rate.cyst[i] <- median(accrate.depth(GSL.cyst$Depth[i]))
+}
+
+plot(GSL.cyst$Depth, acc.rate.cyst)
+
+#yield = mg/g of sediment
+#acc.rate = depth/year or g/year
+#so scaled cyst yield should be yield * acc.rate = mg(cyst)/year
+
+cyst.yield.scl <- GSL.cyst$yield * acc.rate.cyst
+
+plot(GSL.cyst$Depth, log(cyst.yield.scl)) #cyst yield generally decreased over time, but there are skipes
